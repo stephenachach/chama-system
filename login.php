@@ -24,14 +24,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Resolve the user's chama (superadmin has none).
             $chamaId = isset($user['chama_id']) ? (int)$user['chama_id'] : null;
             $chamaName = '';
+            $redirectTo = 'dashboard.php';
             if ($chamaId) {
-                $stmt = $pdo->prepare('SELECT name, status FROM chamas WHERE id = ?');
+                $stmt = $pdo->prepare('SELECT name, status, suspension_reason FROM chamas WHERE id = ?');
                 $stmt->execute([$chamaId]);
                 $chama = $stmt->fetch();
                 if (!$chama) {
                     $error = 'Your group is not available. Please contact the administrator.';
                 } elseif ($chama['status'] !== 'active') {
-                    $error = 'Your group is currently suspended. Please contact the administrator.';
+                    // Suspended for non-payment: the group's admin/treasurer may
+                    // still log in to the billing page so they can pay and
+                    // restore access themselves. Everyone else stays blocked.
+                    $isBillingOfficer = in_array($user['role'], ['admin', 'treasurer'], true);
+                    if (($chama['suspension_reason'] ?? '') === 'nonpayment' && $isBillingOfficer) {
+                        $chamaName = $chama['name'];
+                        $redirectTo = 'account/subscription.php';
+                        $_SESSION['flash_error'] = 'Your group is suspended because its subscription expired. Pay the fee below to restore full access.';
+                    } else {
+                        $error = 'Your group is currently suspended. Please contact the administrator.';
+                    }
                 } else {
                     $chamaName = $chama['name'];
                 }
@@ -47,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'chama_id' => $chamaId,
                     'chama_name' => $chamaName,
                 ];
-                header('Location: ' . url('dashboard.php'));
+                header('Location: ' . url($redirectTo));
                 exit;
             }
         }

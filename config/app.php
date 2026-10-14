@@ -21,6 +21,17 @@ const SUPERADMIN_INITIAL_PASSWORD = 'Chama@2026';
 // Name given to the first (default) chama when upgrading an older installation.
 const DEFAULT_CHAMA_NAME = 'Default Chama';
 
+// ---------------------------------------------------------------------------
+// Subscription billing (Phase 2)
+// ---------------------------------------------------------------------------
+// Days a chama keeps working after its plan expiry before being auto-suspended.
+const SUBSCRIPTION_GRACE_DAYS = 3;
+// Days before expiry that the "expires soon" warning starts showing.
+const SUBSCRIPTION_REMINDER_DAYS = 7;
+// Months of service a single payment buys.
+const SUBSCRIPTION_BILLING_MONTHS = 1;
+
+
 function url(string $path = ''): string
 {
     return BASE_URL . '/' . ltrim($path, '/');

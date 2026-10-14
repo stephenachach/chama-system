@@ -20,6 +20,8 @@ function require_login(): void
         header('Location: ' . url('index.php'));
         exit;
     }
+    subscription_maintenance();
+    enforce_subscription_gate();
 }
 
 // ---------------------------------------------------------------------------
@@ -122,3 +124,38 @@ function show_flash(): void
         unset($_SESSION['flash_error']);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Subscription maintenance (auto-suspension of expired chamas)
+// ---------------------------------------------------------------------------
+
+/**
+ * Runs the expiry check at most once every few minutes instead of on every
+ * request, and never lets a failure break a page.
+ */
+function subscription_maintenance(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    try {
+        $marker = __DIR__ . '/../storage/subscription_check.lock';
+        $dir = dirname($marker);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        if (is_file($marker) && (time() - (int)filemtime($marker)) < 300) {
+            return;
+        }
+        @touch($marker);
+        enforce_subscriptions();
+    } catch (Throwable $ignored) {
+        // Billing tables may not exist yet on a very old install.
+    }
+}
+
+// Subscription + M-Pesa helpers are available everywhere auth is loaded.
+require_once __DIR__ . '/../includes/billing.php';

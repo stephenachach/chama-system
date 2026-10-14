@@ -7,7 +7,8 @@ require_once __DIR__ . '/../includes/header.php';
 $totalChamas = (int)$pdo->query('SELECT COUNT(*) FROM chamas')->fetchColumn();
 $activeChamas = (int)$pdo->query("SELECT COUNT(*) FROM chamas WHERE status = 'active'")->fetchColumn();
 $totalMembers = (int)$pdo->query('SELECT COUNT(*) FROM members')->fetchColumn();
-$platformRevenue = (float)$pdo->query("SELECT COALESCE(SUM(monthly_fee),0) FROM chamas WHERE status = 'active'")->fetchColumn();
+$platformRevenue = (float)$pdo->query("SELECT COALESCE(SUM(monthly_fee),0) FROM chamas WHERE monthly_fee > 0")->fetchColumn();
+$collectedThisMonth = subscription_revenue(date('Y-m-01'), date('Y-m-t'));
 
 $chamas = $pdo->query("
     SELECT c.*,
@@ -37,7 +38,7 @@ $chamas = $pdo->query("
     <div class="card-body table-responsive">
         <table class="table table-hover align-middle">
             <thead>
-                <tr><th>Name</th><th>Members</th><th>Total Contributions</th><th>Plan</th><th>Monthly Fee</th><th>Status</th><th>Created</th><th width="210">Actions</th></tr>
+                <tr><th>Name</th><th>Members</th><th>Total Contributions</th><th>Plan</th><th>Monthly Fee</th><th>Expires at</th><th>Status</th><th>Created</th><th width="210">Actions</th></tr>
             </thead>
             <tbody>
             <?php foreach ($chamas as $c): ?>
@@ -47,10 +48,20 @@ $chamas = $pdo->query("
                     <td><?= money($c['total_contributions']) ?></td>
                     <td><span class="badge bg-<?= $c['plan'] === 'pro' ? 'primary' : 'secondary' ?>"><?= e(ucfirst($c['plan'])) ?></span></td>
                     <td><?= money($c['monthly_fee']) ?></td>
+                    <td>
+                        <?php $rowSub = subscription_status($c); ?>
+                        <?php if ($rowSub['expires_at']): ?>
+                            <?= e(date('d M Y', strtotime((string)$rowSub['expires_at']))) ?><br>
+                            <span class="badge bg-<?= e($rowSub['class']) ?>"><?= e($rowSub['label']) ?></span>
+                        <?php else: ?>
+                            <span class="text-muted">No expiry</span>
+                        <?php endif; ?>
+                    </td>
                     <td><span class="badge bg-<?= $c['status'] === 'active' ? 'success' : 'danger' ?>"><?= e(ucfirst($c['status'])) ?></span></td>
                     <td><?= e(substr((string)$c['created_at'], 0, 10)) ?></td>
                     <td>
                         <a class="btn btn-sm btn-outline-primary" href="<?= url('chamas/view.php?id=' . $c['id']) ?>">View</a>
+                        <a class="btn btn-sm btn-outline-success" href="<?= url('billing/pay.php?chama_id=' . $c['id']) ?>">Bill</a>
                         <a class="btn btn-sm btn-outline-secondary" href="<?= url('chamas/edit.php?id=' . $c['id']) ?>">Edit</a>
                         <?php if ($c['status'] === 'active'): ?>
                             <a class="btn btn-sm btn-outline-danger" onclick="return confirm('Suspend this group? Its users will no longer be able to log in.')" href="<?= url('chamas/edit.php?id=' . $c['id'] . '&status=suspended') ?>">Suspend</a>

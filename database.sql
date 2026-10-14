@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- Chama Management System — database schema (multi-tenant)
+-- Chama Management System — database schema (multi-tenant + M-Pesa billing)
 --
 -- Fresh install: create an empty database and import this file:
 --   CREATE DATABASE IF NOT EXISTS chama_system_db CHARACTER SET utf8mb4;
@@ -15,6 +15,8 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS mpesa_logs;
+DROP TABLE IF EXISTS subscription_payments;
 DROP TABLE IF EXISTS loan_repayments;
 DROP TABLE IF EXISTS welfare_payouts;
 DROP TABLE IF EXISTS loans;
@@ -29,10 +31,13 @@ CREATE TABLE chamas (
     name VARCHAR(150) NOT NULL,
     slug VARCHAR(180) NOT NULL,
     phone VARCHAR(30) NOT NULL DEFAULT '',
+    billing_phone VARCHAR(30) NOT NULL DEFAULT '' COMMENT 'M-Pesa number billed for the subscription',
     email VARCHAR(150) NOT NULL DEFAULT '',
     plan ENUM('free','pro') NOT NULL DEFAULT 'free',
     monthly_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+    plan_expires_at DATE NULL COMMENT 'NULL = never expires',
     status ENUM('active','suspended') NOT NULL DEFAULT 'active',
+    suspension_reason VARCHAR(30) NOT NULL DEFAULT '' COMMENT 'nonpayment | manual | empty',
     started_at DATE NULL,
     notes VARCHAR(255) NOT NULL DEFAULT '',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -121,6 +126,44 @@ CREATE TABLE welfare_payouts (
     status ENUM('pending','approved','rejected','paid') NOT NULL DEFAULT 'pending',
     PRIMARY KEY (id),
     KEY idx_welfare_chama (chama_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Subscription billing (Phase 2). One row per fee payment or trial grant.
+CREATE TABLE subscription_payments (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chama_id INT UNSIGNED NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    months TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    period_start DATE NULL,
+    period_end DATE NULL,
+    method ENUM('mpesa_stk','manual','bank','cash','trial') NOT NULL DEFAULT 'mpesa_stk',
+    status ENUM('pending','paid','failed','cancelled') NOT NULL DEFAULT 'pending',
+    checkout_request_id VARCHAR(120) NULL,
+    merchant_request_id VARCHAR(120) NULL,
+    mpesa_receipt VARCHAR(50) NULL,
+    mpesa_phone VARCHAR(30) NULL,
+    paid_at DATETIME NULL,
+    notes VARCHAR(255) NOT NULL DEFAULT '',
+    created_by INT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_subpay_chama (chama_id),
+    KEY idx_subpay_checkout (checkout_request_id),
+    KEY idx_subpay_status (status),
+    UNIQUE KEY uq_subpay_receipt (mpesa_receipt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Raw trail of every Daraja request, callback and billing event.
+CREATE TABLE mpesa_logs (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    direction ENUM('in','out') NOT NULL DEFAULT 'out',
+    endpoint VARCHAR(120) NOT NULL DEFAULT '',
+    checkout_request_id VARCHAR(120) NULL,
+    receipt_no VARCHAR(50) NULL,
+    payload MEDIUMTEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_mpesalog_checkout (checkout_request_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;

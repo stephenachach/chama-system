@@ -19,9 +19,16 @@ $activeReports = $currentPage === 'reports.php' || $currentFolder === 'reports';
 $activeApprovals = $currentPage === 'approvals.php';
 $activeUsers = $currentFolder === 'users' && $currentPage === 'index.php';
 $activeChamas = $currentFolder === 'chamas';
+$activeBilling = $currentFolder === 'billing' || $currentFolder === 'mpesa' || $currentFolder === 'cron';
 $activeAccount = $currentPage === 'password.php';
+$activeSubscription = $currentFolder === 'account' && $currentPage === 'subscription.php';
 $showLoansNav = $isManager || $user['role'] === 'member';
 $brandName = $isSuper ? APP_NAME : (e($chama['name'] ?? 'Chama System'));
+
+// Subscription awareness (Phase 2).
+$restricted = subscription_restricted_mode();
+$subStatus = (!$isSuper && $chama) ? subscription_status($chama) : null;
+$showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expiring', 'grace', 'expired'], true);
 ?>
 <!doctype html>
 <html lang="en">
@@ -42,9 +49,13 @@ $brandName = $isSuper ? APP_NAME : (e($chama['name'] ?? 'Chama System'));
         </button>
         <div class="collapse navbar-collapse" id="topNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <?php if ($restricted): ?>
+                    <li class="nav-item"><a class="nav-link <?= $activeSubscription ? 'active' : '' ?>" href="<?= url('account/subscription.php') ?>">Subscription</a></li>
+                <?php else: ?>
                 <li class="nav-item"><a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="<?= url('dashboard.php') ?>">Dashboard</a></li>
                 <?php if ($isSuper): ?>
                     <li class="nav-item"><a class="nav-link <?= $activeChamas ? 'active' : '' ?>" href="<?= url('chamas/index.php') ?>">Chamas</a></li>
+                    <li class="nav-item"><a class="nav-link <?= $activeBilling ? 'active' : '' ?>" href="<?= url('billing/index.php') ?>">Billing</a></li>
                 <?php else: ?>
                     <?php if ($isManager): ?>
                         <li class="nav-item"><a class="nav-link <?= $activeMembers ? 'active' : '' ?>" href="<?= url('members/index.php') ?>">Members</a></li>
@@ -61,6 +72,10 @@ $brandName = $isSuper ? APP_NAME : (e($chama['name'] ?? 'Chama System'));
                     <?php if ($user['role'] === 'admin'): ?>
                         <li class="nav-item"><a class="nav-link <?= $activeUsers ? 'active' : '' ?>" href="<?= url('users/index.php') ?>">Users</a></li>
                     <?php endif; ?>
+                    <?php if ($isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeSubscription ? 'active' : '' ?>" href="<?= url('account/subscription.php') ?>">Subscription</a></li>
+                    <?php endif; ?>
+                <?php endif; ?>
                 <?php endif; ?>
                 <li class="nav-item"><a class="nav-link <?= $activeAccount ? 'active' : '' ?>" href="<?= url('account/password.php') ?>">My Account</a></li>
             </ul>
@@ -69,6 +84,10 @@ $brandName = $isSuper ? APP_NAME : (e($chama['name'] ?? 'Chama System'));
                     Logged in as <?= e($user['name']) ?> (<?= $isSuper ? 'Platform' : e(ucfirst($user['role'])) ?>)
                     <?php if (!$isSuper && $chama && $chama['status'] !== 'active'): ?>
                         <span class="badge bg-danger">Group suspended</span>
+                    <?php elseif (!$isSuper && $subStatus && $subStatus['expires_at'] && $isManager): ?>
+                        <span class="badge bg-<?= e($subStatus['class']) ?>" title="Subscription expiry">
+                            <?= e($subStatus['expires_at'] ? 'Plan: ' . date('d M Y', strtotime((string)$subStatus['expires_at'])) : '') ?>
+                        </span>
                     <?php endif; ?>
                 </div>
                 <a class="btn btn-outline-primary btn-sm" href="<?= url('logout.php') ?>">Logout</a>
@@ -78,6 +97,29 @@ $brandName = $isSuper ? APP_NAME : (e($chama['name'] ?? 'Chama System'));
 </nav>
 <main class="container-fluid py-4 px-4">
     <?php show_flash(); ?>
+    <?php if ($restricted): ?>
+    <div class="alert alert-danger d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2" role="alert">
+        <div>
+            <strong>Subscription expired - access suspended.</strong>
+            <?php if ($subStatus && $subStatus['expires_at']): ?>
+                Your plan ended on <?= e(date('d M Y', strtotime((string)$subStatus['expires_at']))) ?>.
+            <?php endif; ?>
+            Pay <?= money($chama['monthly_fee'] ?? 0) ?> by M-Pesa to restore full access immediately.
+        </div>
+        <a class="btn btn-danger btn-sm text-nowrap" href="<?= url('account/subscription.php') ?>">Pay now</a>
+    </div>
+    <?php elseif ($showSubAlert && !$activeSubscription): ?>
+    <div class="alert alert-<?= $subStatus['state'] === 'grace' || $subStatus['state'] === 'expired' ? 'danger' : 'warning' ?> d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2" role="alert">
+        <div>
+            <strong><?= e($subStatus['label']) ?></strong>
+            <?php if ($subStatus['expires_at']): ?>
+                (<?= e(date('d M Y', strtotime((string)$subStatus['expires_at']))) ?>).
+            <?php endif; ?>
+            Renew to keep <?= e($chama['name']) ?> running without interruption.
+        </div>
+        <a class="btn btn-sm btn-outline-dark text-nowrap" href="<?= url('account/subscription.php') ?>">Renew by M-Pesa</a>
+    </div>
+    <?php endif; ?>
     <?php
     // Warn the platform operator while the initial password is still in use.
     if ($isSuper) {

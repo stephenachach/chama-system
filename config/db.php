@@ -109,8 +109,69 @@ function migrate_schema(PDO $pdo): void
     }
 }
 
+// ---------------------------------------------------------------------------
+// Phase 2: subscription billing + M-Pesa tables (also runs as an upgrade).
+// ---------------------------------------------------------------------------
+function migrate_billing_schema(PDO $pdo): void
+{
+    if (!column_exists($pdo, 'chamas', 'id')) {
+        return;
+    }
+
+    if (!column_exists($pdo, 'chamas', 'plan_expires_at')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN plan_expires_at DATE NULL AFTER monthly_fee");
+    }
+    if (!column_exists($pdo, 'chamas', 'billing_phone')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN billing_phone VARCHAR(30) NOT NULL DEFAULT '' AFTER phone");
+    }
+    if (!column_exists($pdo, 'chamas', 'suspension_reason')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN suspension_reason VARCHAR(30) NOT NULL DEFAULT '' AFTER status");
+    }
+
+    if (!column_exists($pdo, 'subscription_payments', 'id')) {
+        $pdo->exec("CREATE TABLE subscription_payments (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            chama_id INT UNSIGNED NOT NULL,
+            amount DECIMAL(12,2) NOT NULL,
+            months TINYINT UNSIGNED NOT NULL DEFAULT 1,
+            period_start DATE NULL,
+            period_end DATE NULL,
+            method ENUM('mpesa_stk','manual','bank','cash','trial') NOT NULL DEFAULT 'mpesa_stk',
+            status ENUM('pending','paid','failed','cancelled') NOT NULL DEFAULT 'pending',
+            checkout_request_id VARCHAR(120) NULL,
+            merchant_request_id VARCHAR(120) NULL,
+            mpesa_receipt VARCHAR(50) NULL,
+            mpesa_phone VARCHAR(30) NULL,
+            paid_at DATETIME NULL,
+            notes VARCHAR(255) NOT NULL DEFAULT '',
+            created_by INT UNSIGNED NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_subpay_chama (chama_id),
+            KEY idx_subpay_checkout (checkout_request_id),
+            KEY idx_subpay_status (status),
+            UNIQUE KEY uq_subpay_receipt (mpesa_receipt)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    if (!column_exists($pdo, 'mpesa_logs', 'id')) {
+        $pdo->exec("CREATE TABLE mpesa_logs (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            direction ENUM('in','out') NOT NULL DEFAULT 'out',
+            endpoint VARCHAR(120) NOT NULL DEFAULT '',
+            checkout_request_id VARCHAR(120) NULL,
+            receipt_no VARCHAR(50) NULL,
+            payload MEDIUMTEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_mpesalog_checkout (checkout_request_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+}
+
 try {
     migrate_schema($pdo);
+    migrate_billing_schema($pdo);
 } catch (Throwable $ignored) {
     // When the core tables have not been imported yet, skip migration;
     // importing database.sql creates everything in the correct shape.
