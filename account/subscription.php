@@ -80,12 +80,7 @@ $payments = $history->fetchAll();
     </div>
 </div>
 
-<?php if ($restricted): ?>
-<div class="alert alert-danger">
-    <strong>Access suspended:</strong> this group's subscription expired, so most features are locked.
-    Pay the fee below and full access is restored instantly.
-</div>
-<?php elseif ($status['state'] === 'expiring' || $status['state'] === 'grace'): ?>
+<?php if ($status['state'] === 'expiring' || $status['state'] === 'grace'): ?>
 <div class="alert alert-warning">
     <strong><?= e($status['label']) ?></strong>
     (<?= e($status['expires_at'] ? date('d M Y', strtotime((string)$status['expires_at'])) : '') ?>).

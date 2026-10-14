@@ -521,3 +521,70 @@ textarea.form-control {
     margin: 0;
     color: #6e7a93;
 }
+
+/* ---------------------------------------------------------------------------
+   Two-tier navbar (Phase 2)
+   Tier 1 = brand + who is logged in + Logout: always visible, never overflows.
+   Tier 2 = the menu: wraps onto extra rows instead of pushing anything off-screen.
+   --------------------------------------------------------------------------- */
+.app-nav {
+    padding-top: 0.45rem;
+    padding-bottom: 0;
+    flex-wrap: wrap;
+}
+
+/* Tier 1 always owns the whole first row; the menu always owns the second.
+   Without these the two flex children squeeze onto one line and the menu
+   wraps into three cramped rows. */
+.app-nav .nav-tier1 {
+    flex: 0 0 100%;
+    width: 100%;
+}
+
+.app-nav .nav-tier2 {
+    flex: 1 0 100%;
+    width: 100%;
+}
+
+.app-nav .navbar-brand {
+    font-size: 1.05rem;
+    max-width: 48vw;
+}
+
+.app-nav .nav-tier2 {
+    border-top: 1px solid rgba(14, 47, 98, 0.08);
+}
+
+.app-nav .navbar-nav .nav-link {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+    border-radius: 0.55rem;
+    white-space: nowrap;
+}
+
+.app-nav .navbar-nav .nav-link.active {
+    background: rgba(14, 47, 98, 0.07);
+    color: var(--primary);
+}
+
+.app-nav .navbar-toggler {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.95rem;
+}
+
+/* Long values (registration links, M-Pesa references) must wrap, not overflow. */
+code {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Flex children are allowed to shrink so nothing forces horizontal scrolling. */
+main .card,
+main .container-fluid,
+main .row > [class*="col-"] {
+    min-width: 0;
+}
+
+@media print {
+    .app-nav .nav-tier2 { display: none !important; }
+}

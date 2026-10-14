@@ -41,57 +41,76 @@ $showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expir
     <link href="<?= url('assets/css/style.css') ?>?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>" rel="stylesheet">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light sticky-top shadow-sm">
-    <div class="container-fluid px-4">
-        <a class="navbar-brand" href="<?= url('dashboard.php') ?>"><?= $brandName ?></a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="topNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+<nav class="navbar navbar-expand-lg navbar-light sticky-top shadow-sm app-nav">
+    <?php /* ---- Tier 1: brand + who is logged in + Logout. Always visible at every width. ---- */ ?>
+    <div class="container-fluid px-3 px-lg-4 nav-tier1">
+        <div class="d-flex w-100 align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2" style="min-width: 0;">
+                <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#topNav" aria-controls="topNav" aria-expanded="false" aria-label="Menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <a class="navbar-brand text-truncate mb-0" href="<?= url('dashboard.php') ?>"><?= $brandName ?></a>
                 <?php if ($restricted): ?>
-                    <li class="nav-item"><a class="nav-link <?= $activeSubscription ? 'active' : '' ?>" href="<?= url('account/subscription.php') ?>">Subscription</a></li>
-                <?php else: ?>
-                <li class="nav-item"><a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="<?= url('dashboard.php') ?>">Dashboard</a></li>
-                <?php if ($isSuper): ?>
-                    <li class="nav-item"><a class="nav-link <?= $activeChamas ? 'active' : '' ?>" href="<?= url('chamas/index.php') ?>">Chamas</a></li>
-                    <li class="nav-item"><a class="nav-link <?= $activeBilling ? 'active' : '' ?>" href="<?= url('billing/index.php') ?>">Billing</a></li>
-                <?php else: ?>
-                    <?php if ($isManager): ?>
-                        <li class="nav-item"><a class="nav-link <?= $activeMembers ? 'active' : '' ?>" href="<?= url('members/index.php') ?>">Members</a></li>
-                        <li class="nav-item"><a class="nav-link <?= $activeContributions ? 'active' : '' ?>" href="<?= url('contributions/index.php') ?>">Contributions</a></li>
-                    <?php endif; ?>
-                    <?php if ($showLoansNav): ?>
-                        <li class="nav-item"><a class="nav-link <?= $activeLoans ? 'active' : '' ?>" href="<?= url('loans/index.php') ?>">Loans</a></li>
-                    <?php endif; ?>
-                    <?php if ($isManager): ?>
-                        <li class="nav-item"><a class="nav-link <?= $activeWelfare ? 'active' : '' ?>" href="<?= url('welfare/index.php') ?>">Welfare</a></li>
-                        <li class="nav-item"><a class="nav-link <?= $activeReports ? 'active' : '' ?>" href="<?= url('reports/index.php') ?>">Reports</a></li>
-                        <li class="nav-item"><a class="nav-link <?= $activeApprovals ? 'active' : '' ?>" href="<?= url('users/approvals.php') ?>">Approvals</a></li>
-                    <?php endif; ?>
-                    <?php if ($user['role'] === 'admin'): ?>
-                        <li class="nav-item"><a class="nav-link <?= $activeUsers ? 'active' : '' ?>" href="<?= url('users/index.php') ?>">Users</a></li>
-                    <?php endif; ?>
-                    <?php if ($isManager): ?>
-                        <li class="nav-item"><a class="nav-link <?= $activeSubscription ? 'active' : '' ?>" href="<?= url('account/subscription.php') ?>">Subscription</a></li>
-                    <?php endif; ?>
+                    <span class="badge bg-danger text-nowrap">Suspended</span>
                 <?php endif; ?>
-                <?php endif; ?>
-                <li class="nav-item"><a class="nav-link <?= $activeAccount ? 'active' : '' ?>" href="<?= url('account/password.php') ?>">My Account</a></li>
-            </ul>
-            <div class="d-flex align-items-center gap-3">
-                <div class="text-muted small text-nowrap">
-                    Logged in as <?= e($user['name']) ?> (<?= $isSuper ? 'Platform' : e(ucfirst($user['role'])) ?>)
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <div class="d-none d-md-flex flex-column align-items-end lh-sm" style="min-width: 0;">
+                    <span class="text-muted small text-truncate" style="max-width: 210px;">
+                        <i class="fa-regular fa-user me-1"></i><?= e($user['name']) ?><?php if (!$isSuper): ?> &middot; <?= e(ucfirst($user['role'])) ?><?php endif; ?>
+                    </span>
                     <?php if (!$isSuper && $chama && $chama['status'] !== 'active'): ?>
                         <span class="badge bg-danger">Group suspended</span>
                     <?php elseif (!$isSuper && $subStatus && $subStatus['expires_at'] && $isManager): ?>
                         <span class="badge bg-<?= e($subStatus['class']) ?>" title="Subscription expiry">
-                            <?= e($subStatus['expires_at'] ? 'Plan: ' . date('d M Y', strtotime((string)$subStatus['expires_at'])) : '') ?>
+                            Plan to <?= e(date('d M Y', strtotime((string)$subStatus['expires_at']))) ?>
                         </span>
                     <?php endif; ?>
                 </div>
-                <a class="btn btn-outline-primary btn-sm" href="<?= url('logout.php') ?>">Logout</a>
+                <a class="btn btn-outline-danger btn-sm text-nowrap flex-shrink-0" href="<?= url('logout.php') ?>">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
+                </a>
             </div>
+        </div>
+    </div>
+
+    <?php /* ---- Tier 2: the menu. Wraps onto as many rows as it needs; hidden behind the hamburger on phones. ---- */ ?>
+    <div class="collapse navbar-collapse nav-tier2" id="topNav">
+        <div class="container-fluid px-3 px-lg-4">
+            <ul class="navbar-nav flex-wrap w-100 gap-1 py-2 py-lg-1 mb-0">
+                <?php if ($restricted): ?>
+                    <li class="nav-item"><a class="nav-link <?= $activeSubscription ? 'active' : '' ?>" href="<?= url('account/subscription.php') ?>"><i class="fa-solid fa-credit-card me-1"></i>Subscription</a></li>
+                <?php else: ?>
+                <li class="nav-item"><a class="nav-link <?= $activeDashboard ? 'active' : '' ?>" href="<?= url('dashboard.php') ?>"><i class="fa-solid fa-gauge me-1"></i>Dashboard</a></li>
+                <?php if ($isSuper): ?>
+                    <li class="nav-item"><a class="nav-link <?= $activeChamas ? 'active' : '' ?>" href="<?= url('chamas/index.php') ?>"><i class="fa-solid fa-people-group me-1"></i>Chamas</a></li>
+                    <li class="nav-item"><a class="nav-link <?= $activeBilling ? 'active' : '' ?>" href="<?= url('billing/index.php') ?>"><i class="fa-solid fa-money-bill-wave me-1"></i>Billing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= url('mpesa/logs.php') ?>"><i class="fa-solid fa-list-check me-1"></i>M-Pesa Logs</a></li>
+                <?php else: ?>
+                    <?php if ($isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeMembers ? 'active' : '' ?>" href="<?= url('members/index.php') ?>"><i class="fa-solid fa-users me-1"></i>Members</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $activeContributions ? 'active' : '' ?>" href="<?= url('contributions/index.php') ?>"><i class="fa-solid fa-sack-dollar me-1"></i>Contributions</a></li>
+                    <?php endif; ?>
+                    <?php if ($showLoansNav): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeLoans ? 'active' : '' ?>" href="<?= url('loans/index.php') ?>"><i class="fa-solid fa-hand-holding-dollar me-1"></i>Loans</a></li>
+                    <?php endif; ?>
+                    <?php if ($isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeWelfare ? 'active' : '' ?>" href="<?= url('welfare/index.php') ?>"><i class="fa-solid fa-heart me-1"></i>Welfare</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $activeReports ? 'active' : '' ?>" href="<?= url('reports/index.php') ?>"><i class="fa-solid fa-chart-pie me-1"></i>Reports</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $activeApprovals ? 'active' : '' ?>" href="<?= url('users/approvals.php') ?>"><i class="fa-solid fa-clipboard-check me-1"></i>Approvals</a></li>
+                    <?php endif; ?>
+                    <?php if ($user['role'] === 'admin'): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeUsers ? 'active' : '' ?>" href="<?= url('users/index.php') ?>"><i class="fa-solid fa-user-shield me-1"></i>Users</a></li>
+                    <?php endif; ?>
+                    <?php if ($isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeSubscription ? 'active' : '' ?>" href="<?= url('account/subscription.php') ?>"><i class="fa-solid fa-credit-card me-1"></i>Subscription</a></li>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php endif; ?>
+                <li class="nav-item"><a class="nav-link <?= $activeAccount ? 'active' : '' ?>" href="<?= url('account/password.php') ?>"><i class="fa-solid fa-key me-1"></i>My Account</a></li>
+                <li class="nav-item d-lg-none"><a class="nav-link text-danger" href="<?= url('logout.php') ?>"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</a></li>
+            </ul>
         </div>
     </div>
 </nav>
