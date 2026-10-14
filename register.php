@@ -9,7 +9,22 @@ if (is_logged_in()) {
 $error = '';
 $success = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Which chama is this registration for?
+// A per-chama link looks like: register.php?chama=acme-chama
+$chamaSlug = trim($_GET['chama'] ?? ($_POST['chama_slug'] ?? ''));
+$activeChamas = $pdo->query("SELECT id, name, slug FROM chamas WHERE status = 'active' ORDER BY name")->fetchAll();
+
+$selectedChama = null;
+if ($chamaSlug !== '') {
+    $stmt = $pdo->prepare("SELECT id, name, slug FROM chamas WHERE slug = ? AND status = 'active'");
+    $stmt->execute([$chamaSlug]);
+    $selectedChama = $stmt->fetch();
+    if (!$selectedChama) {
+        $error = 'That registration link is not active. Ask your chama admin for the correct link.';
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
     $full_name = trim($_POST['full_name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -26,6 +41,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm_password) {
         $error = 'Password and confirm password do not match.';
     } else {
+        // Determine the target chama.
+        $chama = null;
+        if ($selectedChama) {
+            $chama = $selectedChama;
+        } else {
+            $chamaId = (int)($_POST['chama_id'] ?? 0);
+            $stmt = $pdo->prepare("SELECT id, name, slug FROM chamas WHERE id = ? AND status = 'active'");
+            $stmt->execute([$chamaId]);
+            $chama = $stmt->fetch();
+        }
+        if (!$chama) {
+            $error = 'Please choose which group you are registering with.';
+        }
+    }
+
+    if (!$error) {
         try {
             $check = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
             $check->execute([$email]);
@@ -38,12 +69,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Temporary unique member number. Admin/treasurer can edit later if needed.
                 $member_no = 'M' . date('ymdHis');
 
-                $stmt = $pdo->prepare('INSERT INTO members (member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?)');
-                $stmt->execute([$member_no, $full_name, $phone, $email, $address, date('Y-m-d'), 'inactive']);
+                $stmt = $pdo->prepare('SELECT COUNT(*) FROM members WHERE chama_id = ? AND member_no = ?');
+                $stmt->execute([(int)$chama['id'], $member_no]);
+                if ((int)$stmt->fetchColumn() > 0) {
+                    $member_no .= substr(md5(uniqid('', true)), 0, 4);
+                }
+
+                $stmt = $pdo->prepare('INSERT INTO members (chama_id, member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?,?)');
+                $stmt->execute([(int)$chama['id'], $member_no, $full_name, $phone, $email, $address, date('Y-m-d'), 'inactive']);
                 $member_id = $pdo->lastInsertId();
 
-                $stmt = $pdo->prepare('INSERT INTO users (member_id, name, email, password, role, account_status) VALUES (?,?,?,?,?,?)');
+                $stmt = $pdo->prepare('INSERT INTO users (chama_id, member_id, name, email, password, role, account_status) VALUES (?,?,?,?,?,?,?)');
                 $stmt->execute([
+                    (int)$chama['id'],
                     $member_id,
                     $full_name,
                     $email,
@@ -53,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 $pdo->commit();
-                $success = 'Registration submitted successfully. Please wait for admin or treasurer approval before logging in.';
+                $success = 'Registration submitted successfully to ' . $chama['name'] . '. Please wait for admin or treasurer approval before logging in.';
             }
         } catch (PDOException $e) {
             if ($pdo->inTransaction()) {
@@ -78,12 +116,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card shadow-lg" style="max-width: 760px; width: 100%;">
         <div class="card-body p-4">
             <h3 class="fw-bold text-center mb-2">Member Registration</h3>
-            <p class="text-muted text-center mb-4">Register as a chama member. Your account will be pending until approved by admin or treasurer.</p>
+            <?php if ($selectedChama): ?>
+                <p class="text-center mb-1"><span class="badge bg-primary fs-6"><?= e($selectedChama['name']) ?></span></p>
+                <p class="text-muted text-center mb-4">You are registering with this group. Your account will be pending until approved by its admin or treasurer.</p>
+            <?php else: ?>
+                <p class="text-muted text-center mb-4">Choose your group, then register as a member. Your account will be pending until approved by admin or treasurer.</p>
+            <?php endif; ?>
 
             <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
             <?php if ($success): ?><div class="alert alert-success"><?= e($success) ?></div><?php endif; ?>
 
+            <?php if (!$activeChamas): ?>
+                <div class="alert alert-warning">No group is currently open for registration. Please contact your chama administrator.</div>
+            <?php else: ?>
             <form method="post" class="row g-3">
+                <?php if ($selectedChama): ?>
+                    <input type="hidden" name="chama_id" value="<?= (int)$selectedChama['id'] ?>">
+                    <input type="hidden" name="chama_slug" value="<?= e($selectedChama['slug']) ?>">
+                <?php else: ?>
+                    <div class="col-12">
+                        <label class="form-label required">Your Group</label>
+                        <select class="form-select" name="chama_id" required>
+                            <option value="">Select your group</option>
+                            <?php foreach ($activeChamas as $c): ?>
+                                <option value="<?= (int)$c['id'] ?>" <?= (int)($_POST['chama_id'] ?? 0) === (int)$c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php endif; ?>
                 <div class="col-md-6">
                     <label class="form-label required">Full Name</label>
                     <input class="form-control" name="full_name" value="<?= e($_POST['full_name'] ?? '') ?>" required>
@@ -113,6 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <a class="btn btn-outline-secondary" href="<?= url('index.php') ?>">Back to Login</a>
                 </div>
             </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>

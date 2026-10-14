@@ -5,7 +5,9 @@ require_role(['admin','member']);
 require_once __DIR__ . '/../includes/header.php';
 $user = current_user();
 $isMember = $user['role'] === 'member';
-$members = $pdo->query("SELECT id, member_no, full_name FROM members WHERE status='active' ORDER BY full_name")->fetchAll();
+$stmt = $pdo->prepare("SELECT id, member_no, full_name FROM members WHERE chama_id = ? AND status='active' ORDER BY full_name");
+$stmt->execute([current_chama_id()]);
+$members = $stmt->fetchAll();
 $headerTitle = $isMember ? 'Apply for Loan' : 'New Loan Application';
 $headerDesc = $isMember ? 'Submit a loan request for review by the treasurer.' : 'Create a loan application with clear repayment terms.';
 ?>
@@ -31,10 +33,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $purpose = trim($_POST['purpose'] ?? '');
     $total = $amount + ($amount * $interest / 100);
     if ($member_id && $amount > 0 && $date) {
-        $stmt = $pdo->prepare('INSERT INTO loans (member_id, amount, interest_rate, total_payable, balance, purpose, application_date) VALUES (?,?,?,?,?,?,?)');
-        $stmt->execute([$member_id, $amount, $interest, $total, $total, $purpose, $date]);
-        flash_success('Loan application created successfully.');
-        header('Location: ' . url('loans/index.php')); exit;
+        $chamaId = current_chama_id();
+        // Confirm the member belongs to this group.
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM members WHERE id = ? AND chama_id = ?');
+        $stmt->execute([$member_id, $chamaId]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            flash_error('That member does not belong to this group.');
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO loans (chama_id, member_id, amount, interest_rate, total_payable, balance, purpose, application_date) VALUES (?,?,?,?,?,?,?,?)');
+            $stmt->execute([$chamaId, $member_id, $amount, $interest, $total, $total, $purpose, $date]);
+            flash_success('Loan application created successfully.');
+            header('Location: ' . url('loans/index.php')); exit;
+        }
     } else { flash_error('Please select member and enter a valid amount.'); }
 }
 ?>

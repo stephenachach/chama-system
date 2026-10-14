@@ -3,7 +3,9 @@ $page_title = 'New Welfare Request';
 require_once __DIR__ . '/../config/auth.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
-$members = $pdo->query("SELECT id, member_no, full_name FROM members WHERE status='active' ORDER BY full_name")->fetchAll();
+$stmt = $pdo->prepare("SELECT id, member_no, full_name FROM members WHERE chama_id = ? AND status='active' ORDER BY full_name");
+$stmt->execute([current_chama_id()]);
+$members = $stmt->fetchAll();
 ?>
 <div class="card hero-card shadow-sm mb-4">
     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
@@ -22,10 +24,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $request_date = $_POST['request_date'] ?? date('Y-m-d');
     $notes = trim($_POST['notes'] ?? '');
     if ($member_id && $amount > 0 && $reason) {
-        $stmt = $pdo->prepare('INSERT INTO welfare_payouts (member_id, amount, reason, request_date, notes) VALUES (?,?,?,?,?)');
-        $stmt->execute([$member_id, $amount, $reason, $request_date, $notes]);
-        flash_success('Welfare request recorded successfully.');
-        header('Location: ' . url('welfare/index.php')); exit;
+        $chamaId = current_chama_id();
+        // Confirm the member belongs to this group.
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM members WHERE id = ? AND chama_id = ?');
+        $stmt->execute([$member_id, $chamaId]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            flash_error('That member does not belong to this group.');
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO welfare_payouts (chama_id, member_id, amount, reason, request_date, notes) VALUES (?,?,?,?,?,?)');
+            $stmt->execute([$chamaId, $member_id, $amount, $reason, $request_date, $notes]);
+            flash_success('Welfare request recorded successfully.');
+            header('Location: ' . url('welfare/index.php')); exit;
+        }
     } else { flash_error('Please select member, amount and reason.'); }
 }
 ?>

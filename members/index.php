@@ -3,14 +3,17 @@ $page_title = 'Members';
 require_once __DIR__ . '/../config/auth.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
+$chamaId = current_chama_id();
 $q = trim($_GET['q'] ?? '');
 if ($q !== '') {
-    $stmt = $pdo->prepare("SELECT * FROM members WHERE full_name LIKE ? OR member_no LIKE ? OR phone LIKE ? ORDER BY id DESC");
+    $stmt = $pdo->prepare("SELECT * FROM members WHERE chama_id = ? AND (full_name LIKE ? OR member_no LIKE ? OR phone LIKE ?) ORDER BY id DESC");
     $like = "%{$q}%";
-    $stmt->execute([$like, $like, $like]);
+    $stmt->execute([$chamaId, $like, $like, $like]);
     $members = $stmt->fetchAll();
 } else {
-    $members = $pdo->query('SELECT * FROM members ORDER BY id DESC')->fetchAll();
+    $stmt = $pdo->prepare('SELECT * FROM members WHERE chama_id = ? ORDER BY id DESC');
+    $stmt->execute([$chamaId]);
+    $members = $stmt->fetchAll();
 }
 ?>
 <div class="card hero-card shadow-sm mb-4">

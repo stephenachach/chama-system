@@ -6,10 +6,13 @@ require_once __DIR__ . '/../includes/header.php';
 $from = $_GET['from'] ?? '';
 $to = $_GET['to'] ?? '';
 $member_id = (int)($_GET['member_id'] ?? 0);
-$members = $pdo->query("SELECT id, member_no, full_name FROM members ORDER BY full_name")->fetchAll();
+$chamaId = current_chama_id();
+$stmt = $pdo->prepare("SELECT id, member_no, full_name FROM members WHERE chama_id = ? ORDER BY full_name");
+$stmt->execute([$chamaId]);
+$members = $stmt->fetchAll();
 
-$sql = "SELECT c.*, m.full_name, m.member_no FROM contributions c JOIN members m ON m.id=c.member_id WHERE 1=1";
-$params = [];
+$sql = "SELECT c.*, m.full_name, m.member_no FROM contributions c JOIN members m ON m.id=c.member_id WHERE c.chama_id = ?";
+$params = [$chamaId];
 if ($from) { $sql .= " AND c.contribution_date >= ?"; $params[] = $from; }
 if ($to) { $sql .= " AND c.contribution_date <= ?"; $params[] = $to; }
 if ($member_id) { $sql .= " AND c.member_id = ?"; $params[] = $member_id; }

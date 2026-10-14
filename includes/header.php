@@ -3,7 +3,9 @@ require_once __DIR__ . '/../config/auth.php';
 require_login();
 $page_title = $page_title ?? APP_NAME;
 $user = current_user();
+$isSuper = is_superadmin();
 $isManager = in_array($user['role'], ['admin', 'treasurer'], true);
+$chama = $isSuper ? null : current_chama();
 $uri = $_SERVER['REQUEST_URI'] ?? '';
 $path = parse_url($uri, PHP_URL_PATH);
 $currentPage = basename($path);
@@ -16,7 +18,10 @@ $activeWelfare = $currentFolder === 'welfare';
 $activeReports = $currentPage === 'reports.php' || $currentFolder === 'reports';
 $activeApprovals = $currentPage === 'approvals.php';
 $activeUsers = $currentFolder === 'users' && $currentPage === 'index.php';
+$activeChamas = $currentFolder === 'chamas';
+$activeAccount = $currentPage === 'password.php';
 $showLoansNav = $isManager || $user['role'] === 'member';
+$brandName = $isSuper ? APP_NAME : (e($chama['name'] ?? 'Chama System'));
 ?>
 <!doctype html>
 <html lang="en">
@@ -31,31 +36,41 @@ $showLoansNav = $isManager || $user['role'] === 'member';
 <body>
 <nav class="navbar navbar-expand-lg navbar-light sticky-top shadow-sm">
     <div class="container-fluid px-4">
-        <a class="navbar-brand" href="<?= url('dashboard.php') ?>">Chama System</a>
+        <a class="navbar-brand" href="<?= url('dashboard.php') ?>"><?= $brandName ?></a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="topNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item"><a class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>" href="<?= url('dashboard.php') ?>">Dashboard</a></li>
-                <?php if ($isManager): ?>
-                    <li class="nav-item"><a class="nav-link <?= $currentPage === 'members' || $currentPage === 'members/index.php' ? 'active' : '' ?>" href="<?= url('members/index.php') ?>">Members</a></li>
-                    <li class="nav-item"><a class="nav-link <?= $currentPage === 'contributions' || $currentPage === 'contributions/index.php' ? 'active' : '' ?>" href="<?= url('contributions/index.php') ?>">Contributions</a></li>
+                <?php if ($isSuper): ?>
+                    <li class="nav-item"><a class="nav-link <?= $activeChamas ? 'active' : '' ?>" href="<?= url('chamas/index.php') ?>">Chamas</a></li>
+                <?php else: ?>
+                    <?php if ($isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeMembers ? 'active' : '' ?>" href="<?= url('members/index.php') ?>">Members</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $activeContributions ? 'active' : '' ?>" href="<?= url('contributions/index.php') ?>">Contributions</a></li>
+                    <?php endif; ?>
+                    <?php if ($showLoansNav): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeLoans ? 'active' : '' ?>" href="<?= url('loans/index.php') ?>">Loans</a></li>
+                    <?php endif; ?>
+                    <?php if ($isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeWelfare ? 'active' : '' ?>" href="<?= url('welfare/index.php') ?>">Welfare</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $activeReports ? 'active' : '' ?>" href="<?= url('reports/index.php') ?>">Reports</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $activeApprovals ? 'active' : '' ?>" href="<?= url('users/approvals.php') ?>">Approvals</a></li>
+                    <?php endif; ?>
+                    <?php if ($user['role'] === 'admin'): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeUsers ? 'active' : '' ?>" href="<?= url('users/index.php') ?>">Users</a></li>
+                    <?php endif; ?>
                 <?php endif; ?>
-                <?php if ($showLoansNav): ?>
-                    <li class="nav-item"><a class="nav-link <?= $activeLoans ? 'active' : '' ?>" href="<?= url('loans/index.php') ?>">Loans</a></li>
-                <?php endif; ?>
-                <?php if ($isManager): ?>
-                    <li class="nav-item"><a class="nav-link <?= $currentPage === 'welfare' || $currentPage === 'welfare/index.php' ? 'active' : '' ?>" href="<?= url('welfare/index.php') ?>">Welfare</a></li>
-                    <li class="nav-item"><a class="nav-link <?= $activeReports ? 'active' : '' ?>" href="<?= url('reports/index.php') ?>">Reports</a></li>
-                    <li class="nav-item"><a class="nav-link <?= $activeApprovals ? 'active' : '' ?>" href="<?= url('users/approvals.php') ?>">Approvals</a></li>
-                <?php endif; ?>
-                <?php if ($user['role'] === 'admin'): ?>
-                    <li class="nav-item"><a class="nav-link <?= $currentPage === 'index.php' ? 'active' : '' ?>" href="<?= url('users/index.php') ?>">Users</a></li>
-                <?php endif; ?>
+                <li class="nav-item"><a class="nav-link <?= $activeAccount ? 'active' : '' ?>" href="<?= url('account/password.php') ?>">My Account</a></li>
             </ul>
             <div class="d-flex align-items-center gap-3">
-                <div class="text-muted small text-nowrap">Logged in as <?= e($user['name']) ?> (<?= e(ucfirst($user['role'])) ?>)</div>
+                <div class="text-muted small text-nowrap">
+                    Logged in as <?= e($user['name']) ?> (<?= $isSuper ? 'Platform' : e(ucfirst($user['role'])) ?>)
+                    <?php if (!$isSuper && $chama && $chama['status'] !== 'active'): ?>
+                        <span class="badge bg-danger">Group suspended</span>
+                    <?php endif; ?>
+                </div>
                 <a class="btn btn-outline-primary btn-sm" href="<?= url('logout.php') ?>">Logout</a>
             </div>
         </div>
@@ -63,3 +78,21 @@ $showLoansNav = $isManager || $user['role'] === 'member';
 </nav>
 <main class="container-fluid py-4 px-4">
     <?php show_flash(); ?>
+    <?php
+    // Warn the platform operator while the initial password is still in use.
+    if ($isSuper) {
+        $stmt = $pdo->prepare('SELECT password FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$user['id']]);
+        $hash = $stmt->fetchColumn();
+        if ($hash && password_verify(SUPERADMIN_INITIAL_PASSWORD, (string)$hash)):
+    ?>
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>Security notice:</strong> the platform account is still using its initial password.
+        Change it now in <a href="<?= url('account/password.php') ?>">My Account</a> and update the
+        <code>SUPERADMIN_INITIAL_PASSWORD</code> constant in <code>config/app.php</code>.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
+    <?php
+    }
+    ?>

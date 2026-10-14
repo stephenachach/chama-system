@@ -9,8 +9,8 @@ if (!$id) {
     exit;
 }
 
-$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
-$stmt->execute([$id]);
+$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? AND chama_id = ? LIMIT 1');
+$stmt->execute([$id, current_chama_id()]);
 $user = $stmt->fetch();
 if (!$user) {
     flash_error('User not found.');
@@ -25,8 +25,8 @@ if ($user['role'] !== 'member' || ($user['account_status'] ?? 'approved') !== 'a
 }
 
 try {
-    $stmt = $pdo->prepare("UPDATE users SET role = 'treasurer' WHERE id = ?");
-    $stmt->execute([$id]);
+    $stmt = $pdo->prepare("UPDATE users SET role = 'treasurer' WHERE id = ? AND chama_id = ?");
+    $stmt->execute([$id, current_chama_id()]);
     flash_success('Member promoted to treasurer successfully.');
 } catch (PDOException $e) {
     flash_error('Could not promote user. Please try again.');

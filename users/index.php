@@ -3,7 +3,9 @@ $page_title = 'System Users';
 require_once __DIR__ . '/../config/auth.php';
 require_role(['admin']);
 require_once __DIR__ . '/../includes/header.php';
-$users = $pdo->query('SELECT u.*, m.member_no FROM users u LEFT JOIN members m ON m.id=u.member_id ORDER BY u.id DESC')->fetchAll();
+$stmt = $pdo->prepare('SELECT u.*, m.member_no FROM users u LEFT JOIN members m ON m.id=u.member_id WHERE u.chama_id = ? ORDER BY u.id DESC');
+$stmt->execute([current_chama_id()]);
+$users = $stmt->fetchAll();
 ?>
 <div class="card hero-card shadow-sm mb-4">
     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">

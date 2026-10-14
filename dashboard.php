@@ -1,20 +1,107 @@
 <?php
 $page_title = 'Dashboard';
-require_once __DIR__ . '/includes/header.php';
-
+require_once __DIR__ . '/config/auth.php';
+require_login();
 $user = current_user();
+
+if (is_superadmin()) {
+    // ------------------------------------------------------------------
+    // Platform operator view
+    // ------------------------------------------------------------------
+    $totalChamas = $pdo->query('SELECT COUNT(*) FROM chamas')->fetchColumn();
+    $activeChamas = $pdo->query("SELECT COUNT(*) FROM chamas WHERE status = 'active'")->fetchColumn();
+    $totalMembers = $pdo->query('SELECT COUNT(*) FROM members')->fetchColumn();
+    $platformRevenue = $pdo->query("SELECT COALESCE(SUM(monthly_fee),0) FROM chamas WHERE status = 'active'")->fetchColumn();
+
+    $recentChamas = $pdo->query("
+        SELECT c.*, (SELECT COUNT(*) FROM members m WHERE m.chama_id = c.id) AS member_count
+        FROM chamas c ORDER BY c.id DESC LIMIT 5
+    ")->fetchAll();
+
+    require_once __DIR__ . '/includes/header.php';
+    ?>
+    <div class="card hero-card shadow-sm mb-4">
+        <div class="card-body d-flex flex-column flex-lg-row justify-content-between align-items-start gap-4">
+            <div>
+                <h1 class="display-6 fw-bold mb-1">Platform Dashboard</h1>
+                <p class="text-muted mb-0">You are signed in as the platform operator. Create chamas, assign their first admin, and track group activity across the network.</p>
+            </div>
+            <a class="btn btn-primary btn-lg" href="<?= url('chamas/create.php') ?>">New Chama</a>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-4 g-3 mb-4">
+        <div class="col"><div class="card stat-card bg-primary"><div class="card-body"><div class="icon">🏘️</div><h6 class="mb-2">Total Chamas</h6><h2><?= e($totalChamas) ?></h2></div></div></div>
+        <div class="col"><div class="card stat-card bg-success"><div class="card-body"><div class="icon">👥</div><h6 class="mb-2">Total Members</h6><h2><?= e($totalMembers) ?></h2></div></div></div>
+        <div class="col"><div class="card stat-card bg-info"><div class="card-body"><div class="icon">📈</div><h6 class="mb-2">Monthly Revenue</h6><h2><?= money($platformRevenue) ?></h2></div></div></div>
+        <div class="col"><div class="card stat-card bg-warning"><div class="card-body"><div class="icon">✅</div><h6 class="mb-2">Active Groups</h6><h2><?= e($activeChamas) ?></h2></div></div></div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Latest Chamas</span>
+            <a href="<?= url('chamas/index.php') ?>" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>Name</th><th>Members</th><th>Plan</th><th>Monthly Fee</th><th>Status</th><th>Created</th><th width="90">Action</th></tr></thead>
+                <tbody>
+                <?php foreach ($recentChamas as $c): ?>
+                    <tr>
+                        <td><?= e($c['name']) ?></td>
+                        <td><?= e($c['member_count']) ?></td>
+                        <td><span class="badge bg-<?= $c['plan'] === 'pro' ? 'primary' : 'secondary' ?>"><?= e(ucfirst($c['plan'])) ?></span></td>
+                        <td><?= money($c['monthly_fee']) ?></td>
+                        <td><span class="badge bg-<?= $c['status'] === 'active' ? 'success' : 'danger' ?>"><?= e(ucfirst($c['status'])) ?></span></td>
+                        <td><?= e(substr((string)$c['created_at'], 0, 10)) ?></td>
+                        <td><a class="btn btn-sm btn-outline-primary" href="<?= url('chamas/view.php?id=' . $c['id']) ?>">View</a></td>
+                    </tr>
+                <?php endforeach; ?>
+                <?php if (!$recentChamas): ?><tr><td colspan="7" class="text-center text-muted">No chamas yet. Create your first one.</td></tr><?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php require_once __DIR__ . '/includes/footer.php'; exit;
+}
+
+require_once __DIR__ . '/includes/header.php';
 $isManager = in_array($user['role'], ['admin', 'treasurer'], true);
 $memberId = (int)($user['member_id'] ?? 0);
+$chamaId = current_chama_id();
 
 if ($isManager) {
-    $totalMembers = $pdo->query("SELECT COUNT(*) FROM members WHERE status='active'")->fetchColumn();
-    $totalContributions = $pdo->query('SELECT COALESCE(SUM(amount),0) FROM contributions')->fetchColumn();
-    $loanBalance = $pdo->query("SELECT COALESCE(SUM(balance),0) FROM loans WHERE status='approved'")->fetchColumn();
-    $totalWelfare = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM welfare_payouts WHERE status IN ('approved','paid')")->fetchColumn();
-    $pendingLoans = $pdo->query("SELECT COUNT(*) FROM loans WHERE status='pending'")->fetchColumn();
-    $pendingWelfare = $pdo->query("SELECT COUNT(*) FROM welfare_payouts WHERE status='pending'")->fetchColumn();
-    $pendingRegistrations = $pdo->query("SELECT COUNT(*) FROM users WHERE account_status='pending'")->fetchColumn();
-    $recentContributions = $pdo->query("SELECT c.*, m.full_name FROM contributions c JOIN members m ON m.id=c.member_id ORDER BY c.contribution_date DESC, c.id DESC LIMIT 5")->fetchAll();
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM members WHERE status='active' AND chama_id = ?");
+    $stmt->execute([$chamaId]);
+    $totalMembers = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM contributions WHERE chama_id = ?');
+    $stmt->execute([$chamaId]);
+    $totalContributions = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(balance),0) FROM loans WHERE status='approved' AND chama_id = ?");
+    $stmt->execute([$chamaId]);
+    $loanBalance = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM welfare_payouts WHERE status IN ('approved','paid') AND chama_id = ?");
+    $stmt->execute([$chamaId]);
+    $totalWelfare = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM loans WHERE status='pending' AND chama_id = ?");
+    $stmt->execute([$chamaId]);
+    $pendingLoans = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM welfare_payouts WHERE status='pending' AND chama_id = ?");
+    $stmt->execute([$chamaId]);
+    $pendingWelfare = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE account_status='pending' AND chama_id = ?");
+    $stmt->execute([$chamaId]);
+    $pendingRegistrations = $stmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT c.*, m.full_name FROM contributions c JOIN members m ON m.id=c.member_id WHERE c.chama_id = ? ORDER BY c.contribution_date DESC, c.id DESC LIMIT 5");
+    $stmt->execute([$chamaId]);
+    $recentContributions = $stmt->fetchAll();
 } else {
     $stmt = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM contributions WHERE member_id=?');
     $stmt->execute([$memberId]);

@@ -11,6 +11,8 @@ $status = $_GET['status'] ?? '';
 $sql = "SELECT l.*, m.member_no, m.full_name, m.status AS member_status, COALESCE(SUM(r.amount),0) AS repaid FROM loans l JOIN members m ON m.id=l.member_id LEFT JOIN loan_repayments r ON r.loan_id=l.id";
 $params = [];
 $where = [];
+$where[] = "l.chama_id=?";
+$params[] = current_chama_id();
 if ($status) {
     $where[] = "l.status=?";
     $params[] = $status;

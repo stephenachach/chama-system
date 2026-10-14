@@ -10,7 +10,16 @@ if ($baseUrl === '/') {
     $baseUrl = '';
 }
 define('BASE_URL', $baseUrl);
-const APP_NAME = 'Community Welfare (Chama) Financial Management System';
+const APP_NAME = 'Chama Management System';
+
+// Platform operator account (created automatically on first run of an upgraded
+// installation). Update these two constants before going live, then change the
+// actual password after first login via My Account -> Change Password.
+const SUPERADMIN_EMAIL = 'superadmin@chama.local';
+const SUPERADMIN_INITIAL_PASSWORD = 'Chama@2026';
+
+// Name given to the first (default) chama when upgrading an older installation.
+const DEFAULT_CHAMA_NAME = 'Default Chama';
 
 function url(string $path = ''): string
 {
@@ -25,6 +34,14 @@ function money($amount): string
 function e($value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function slugify(string $text): string
+{
+    $slug = strtolower(trim($text));
+    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+    $slug = trim($slug, '-');
+    return $slug !== '' ? $slug : 'chama-' . substr(md5(uniqid('', true)), 0, 6);
 }
 
 function loanEligibility(array $loan): array

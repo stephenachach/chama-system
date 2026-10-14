@@ -5,8 +5,8 @@ require_role(['admin','treasurer']);
 $id = (int)($_GET['id'] ?? 0);
 $action = $_GET['action'] ?? '';
 
-$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? LIMIT 1');
-$stmt->execute([$id]);
+$stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? AND chama_id = ? LIMIT 1');
+$stmt->execute([$id, current_chama_id()]);
 $user = $stmt->fetch();
 
 if (!$user) {
@@ -25,23 +25,25 @@ if (in_array($user['role'], ['admin', 'treasurer'], true) && ($user['account_sta
 try {
     $pdo->beginTransaction();
 
+    $chamaId = current_chama_id();
+
     if ($action === 'approve') {
-        $stmt = $pdo->prepare("UPDATE users SET account_status = 'approved', role = 'member' WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt = $pdo->prepare("UPDATE users SET account_status = 'approved', role = 'member' WHERE id = ? AND chama_id = ?");
+        $stmt->execute([$id, $chamaId]);
 
         if (!empty($user['member_id'])) {
-            $stmt = $pdo->prepare("UPDATE members SET status = 'active' WHERE id = ?");
-            $stmt->execute([$user['member_id']]);
+            $stmt = $pdo->prepare("UPDATE members SET status = 'active' WHERE id = ? AND chama_id = ?");
+            $stmt->execute([$user['member_id'], $chamaId]);
         }
 
         flash_success('Member registration approved successfully. The member can now login.');
     } elseif ($action === 'reject') {
-        $stmt = $pdo->prepare("UPDATE users SET account_status = 'rejected', role = 'member' WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt = $pdo->prepare("UPDATE users SET account_status = 'rejected', role = 'member' WHERE id = ? AND chama_id = ?");
+        $stmt->execute([$id, $chamaId]);
 
         if (!empty($user['member_id'])) {
-            $stmt = $pdo->prepare("UPDATE members SET status = 'inactive' WHERE id = ?");
-            $stmt->execute([$user['member_id']]);
+            $stmt = $pdo->prepare("UPDATE members SET status = 'inactive' WHERE id = ? AND chama_id = ?");
+            $stmt->execute([$user['member_id'], $chamaId]);
         }
 
         flash_success('Member registration rejected.');

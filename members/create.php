@@ -26,12 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status = $_POST['status'] ?? 'active';
 
     if ($member_no && $full_name && $join_date) {
+        $chamaId = current_chama_id();
         try {
-            $stmt = $pdo->prepare('INSERT INTO members (member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?)');
-            $stmt->execute([$member_no, $full_name, $phone, $email, $address, $join_date, $status]);
-            flash_success('Member added successfully.');
-            header('Location: ' . url('members/index.php'));
-            exit;
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM members WHERE chama_id = ? AND member_no = ?');
+            $stmt->execute([$chamaId, $member_no]);
+            if ((int)$stmt->fetchColumn() > 0) {
+                flash_error('That member number is already used in this group. Choose a different one.');
+            } else {
+                $stmt = $pdo->prepare('INSERT INTO members (chama_id, member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?,?)');
+                $stmt->execute([$chamaId, $member_no, $full_name, $phone, $email, $address, $join_date, $status]);
+                flash_success('Member added successfully.');
+                header('Location: ' . url('members/index.php'));
+                exit;
+            }
         } catch (PDOException $e) { flash_error('Could not add member. Member number may already exist.'); }
     } else { flash_error('Member number, full name and join date are required.'); }
 }

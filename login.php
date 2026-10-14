@@ -21,16 +21,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($accountStatus === 'rejected') {
             $error = 'Your registration was rejected. Please contact the administrator.';
         } else {
-            $_SESSION['user'] = [
-                'id' => $user['id'],
-                'member_id' => $user['member_id'],
-                'name' => $user['name'],
-                'email' => $user['email'],
-                'role' => $user['role'],
-                'account_status' => $accountStatus,
-            ];
-            header('Location: ' . url('dashboard.php'));
-            exit;
+            // Resolve the user's chama (superadmin has none).
+            $chamaId = isset($user['chama_id']) ? (int)$user['chama_id'] : null;
+            $chamaName = '';
+            if ($chamaId) {
+                $stmt = $pdo->prepare('SELECT name, status FROM chamas WHERE id = ?');
+                $stmt->execute([$chamaId]);
+                $chama = $stmt->fetch();
+                if (!$chama) {
+                    $error = 'Your group is not available. Please contact the administrator.';
+                } elseif ($chama['status'] !== 'active') {
+                    $error = 'Your group is currently suspended. Please contact the administrator.';
+                } else {
+                    $chamaName = $chama['name'];
+                }
+            }
+            if ($error === '') {
+                $_SESSION['user'] = [
+                    'id' => $user['id'],
+                    'member_id' => $user['member_id'],
+                    'name' => $user['name'],
+                    'email' => $user['email'],
+                    'role' => $user['role'],
+                    'account_status' => $accountStatus,
+                    'chama_id' => $chamaId,
+                    'chama_name' => $chamaName,
+                ];
+                header('Location: ' . url('dashboard.php'));
+                exit;
+            }
         }
     } else {
         $error = 'Invalid email or password.';

@@ -5,15 +5,23 @@ require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 
 $selectedLoanId = (int)($_GET['loan_id'] ?? 0);
-$stmt = $pdo->query("SELECT u.id AS user_id, u.name, u.email, u.role, u.account_status, u.created_at, m.id AS member_id, m.member_no, m.full_name, m.phone, m.address, m.join_date, m.status AS member_status FROM users u LEFT JOIN members m ON m.id = u.member_id WHERE u.account_status = 'pending' ORDER BY u.created_at ASC");
+$chamaId = current_chama_id();
+
+$stmt = $pdo->prepare("SELECT u.id AS user_id, u.name, u.email, u.role, u.account_status, u.created_at, m.id AS member_id, m.member_no, m.full_name, m.phone, m.address, m.join_date, m.status AS member_status FROM users u LEFT JOIN members m ON m.id = u.member_id WHERE u.account_status = 'pending' AND u.chama_id = ? ORDER BY u.created_at ASC");
+$stmt->execute([$chamaId]);
 $pendingUsers = $stmt->fetchAll();
 
-$loanStmt = $pdo->query("SELECT l.id AS loan_id, l.member_id, l.amount, l.interest_rate, l.total_payable, l.balance, l.purpose, l.application_date, m.member_no, m.full_name FROM loans l JOIN members m ON m.id = l.member_id WHERE l.status = 'pending' ORDER BY l.application_date ASC");
+$loanStmt = $pdo->prepare("SELECT l.id AS loan_id, l.member_id, l.amount, l.interest_rate, l.total_payable, l.balance, l.purpose, l.application_date, m.member_no, m.full_name FROM loans l JOIN members m ON m.id = l.member_id WHERE l.status = 'pending' AND l.chama_id = ? ORDER BY l.application_date ASC");
+$loanStmt->execute([$chamaId]);
 $pendingLoans = $loanStmt->fetchAll();
 
-$approvedCount = $pdo->query("SELECT COUNT(*) FROM users WHERE account_status = 'approved'")->fetchColumn();
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE account_status = 'approved' AND chama_id = ?");
+$stmt->execute([$chamaId]);
+$approvedCount = $stmt->fetchColumn();
 $pendingCount = count($pendingUsers);
-$rejectedCount = $pdo->query("SELECT COUNT(*) FROM users WHERE account_status = 'rejected'")->fetchColumn();
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE account_status = 'rejected' AND chama_id = ?");
+$stmt->execute([$chamaId]);
+$rejectedCount = $stmt->fetchColumn();
 $pendingLoanCount = count($pendingLoans);
 ?>
 <div class="card hero-card shadow-sm mb-4">

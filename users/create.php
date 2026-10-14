@@ -3,7 +3,9 @@ $page_title = 'Add User';
 require_once __DIR__ . '/../config/auth.php';
 require_role(['admin']);
 require_once __DIR__ . '/../includes/header.php';
-$members = $pdo->query('SELECT id, member_no, full_name FROM members ORDER BY full_name')->fetchAll();
+$stmt = $pdo->prepare('SELECT id, member_no, full_name FROM members WHERE chama_id = ? ORDER BY full_name');
+$stmt->execute([current_chama_id()]);
+$members = $stmt->fetchAll();
 ?>
 <div class="card hero-card shadow-sm mb-4">
     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
@@ -22,9 +24,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $role = $_POST['role'] ?? 'member';
     $member_id = !empty($_POST['member_id']) ? (int)$_POST['member_id'] : null;
     if ($name && $email && strlen($password) >= 6) {
+        $chamaId = current_chama_id();
+        if ($member_id) {
+            // Confirm the linked member belongs to this group.
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM members WHERE id = ? AND chama_id = ?');
+            $stmt->execute([$member_id, $chamaId]);
+            if ((int)$stmt->fetchColumn() === 0) {
+                $member_id = null;
+            }
+        }
         try {
-            $stmt = $pdo->prepare('INSERT INTO users (member_id, name, email, password, role, account_status) VALUES (?,?,?,?,?,?)');
-            $stmt->execute([$member_id, $name, $email, password_hash($password, PASSWORD_DEFAULT), $role, 'approved']);
+            $stmt = $pdo->prepare('INSERT INTO users (chama_id, member_id, name, email, password, role, account_status) VALUES (?,?,?,?,?,?,?)');
+            $stmt->execute([$chamaId, $member_id, $name, $email, password_hash($password, PASSWORD_DEFAULT), $role, 'approved']);
             flash_success('User account created successfully.');
             header('Location: ' . url('users/index.php')); exit;
         } catch (PDOException $e) { flash_error('Could not create user. Email may already exist.'); }

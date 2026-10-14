@@ -4,9 +4,9 @@ require_once __DIR__ . '/../config/auth.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 $status = $_GET['status'] ?? '';
-$sql = "SELECT w.*, m.member_no, m.full_name FROM welfare_payouts w JOIN members m ON m.id=w.member_id";
-$params = [];
-if ($status) { $sql .= " WHERE w.status=?"; $params[] = $status; }
+$sql = "SELECT w.*, m.member_no, m.full_name FROM welfare_payouts w JOIN members m ON m.id=w.member_id WHERE w.chama_id=?";
+$params = [current_chama_id()];
+if ($status) { $sql .= " AND w.status=?"; $params[] = $status; }
 $sql .= " ORDER BY w.id DESC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);

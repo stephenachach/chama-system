@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/auth.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 $id = (int)($_GET['id'] ?? 0);
-$stmt = $pdo->prepare('SELECT w.*, m.member_no, m.full_name FROM welfare_payouts w JOIN members m ON m.id=w.member_id WHERE w.id=?');
+$stmt = $pdo->prepare('SELECT w.*, m.member_no, m.full_name FROM welfare_payouts w JOIN members m ON m.id=w.member_id WHERE w.id=? AND w.chama_id=?');
 ?>
 <div class="card hero-card shadow-sm mb-4">
     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
@@ -16,7 +16,7 @@ $stmt = $pdo->prepare('SELECT w.*, m.member_no, m.full_name FROM welfare_payouts
     </div>
 </div>
 <?php
-$stmt->execute([$id]);
+$stmt->execute([$id, current_chama_id()]);
 $welfare = $stmt->fetch();
 if (!$welfare) { flash_error('Welfare request not found.'); header('Location: ' . url('welfare/index.php')); exit; }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

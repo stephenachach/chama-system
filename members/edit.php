@@ -15,8 +15,8 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 <?php
 $id = (int)($_GET['id'] ?? 0);
-$stmt = $pdo->prepare('SELECT * FROM members WHERE id=?');
-$stmt->execute([$id]);
+$stmt = $pdo->prepare('SELECT * FROM members WHERE id=? AND chama_id=?');
+$stmt->execute([$id, current_chama_id()]);
 $member = $stmt->fetch();
 if (!$member) { flash_error('Member not found.'); header('Location: ' . url('members/index.php')); exit; }
 

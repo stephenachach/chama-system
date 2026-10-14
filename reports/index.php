@@ -6,16 +6,18 @@ require_once __DIR__ . '/../includes/header.php';
 $from = $_GET['from'] ?? date('Y-m-01');
 $to = $_GET['to'] ?? date('Y-m-d');
 
-$stmt = $pdo->prepare("SELECT m.member_no, m.full_name, COALESCE(SUM(c.amount),0) AS total FROM members m LEFT JOIN contributions c ON c.member_id=m.id AND c.contribution_date BETWEEN ? AND ? GROUP BY m.id ORDER BY m.full_name");
-$stmt->execute([$from, $to]);
+$chamaId = current_chama_id();
+
+$stmt = $pdo->prepare("SELECT m.member_no, m.full_name, COALESCE(SUM(c.amount),0) AS total FROM members m LEFT JOIN contributions c ON c.member_id=m.id AND c.contribution_date BETWEEN ? AND ? WHERE m.chama_id = ? GROUP BY m.id ORDER BY m.full_name");
+$stmt->execute([$from, $to, $chamaId]);
 $contributionReport = $stmt->fetchAll();
 
-$stmt = $pdo->prepare("SELECT l.*, m.member_no, m.full_name, COALESCE(SUM(r.amount),0) AS repaid FROM loans l JOIN members m ON m.id=l.member_id LEFT JOIN loan_repayments r ON r.loan_id=l.id WHERE l.application_date BETWEEN ? AND ? GROUP BY l.id ORDER BY l.id DESC");
-$stmt->execute([$from, $to]);
+$stmt = $pdo->prepare("SELECT l.*, m.member_no, m.full_name, COALESCE(SUM(r.amount),0) AS repaid FROM loans l JOIN members m ON m.id=l.member_id LEFT JOIN loan_repayments r ON r.loan_id=l.id WHERE l.application_date BETWEEN ? AND ? AND l.chama_id = ? GROUP BY l.id ORDER BY l.id DESC");
+$stmt->execute([$from, $to, $chamaId]);
 $loanReport = $stmt->fetchAll();
 
-$stmt = $pdo->prepare("SELECT w.*, m.member_no, m.full_name FROM welfare_payouts w JOIN members m ON m.id=w.member_id WHERE w.request_date BETWEEN ? AND ? ORDER BY w.id DESC");
-$stmt->execute([$from, $to]);
+$stmt = $pdo->prepare("SELECT w.*, m.member_no, m.full_name FROM welfare_payouts w JOIN members m ON m.id=w.member_id WHERE w.request_date BETWEEN ? AND ? AND w.chama_id = ? ORDER BY w.id DESC");
+$stmt->execute([$from, $to, $chamaId]);
 $welfareReport = $stmt->fetchAll();
 
 $totalContributions = array_sum(array_column($contributionReport, 'total'));

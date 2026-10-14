@@ -10,8 +10,8 @@ if (!$id || !in_array($action, ['approve', 'reject'], true)) {
     exit;
 }
 
-$stmt = $pdo->prepare('SELECT l.*, m.member_no, m.full_name FROM loans l JOIN members m ON m.id = l.member_id WHERE l.id = ? LIMIT 1');
-$stmt->execute([$id]);
+$stmt = $pdo->prepare('SELECT l.*, m.member_no, m.full_name FROM loans l JOIN members m ON m.id = l.member_id WHERE l.id = ? AND l.chama_id = ? LIMIT 1');
+$stmt->execute([$id, current_chama_id()]);
 $loan = $stmt->fetch();
 
 if (!$loan || $loan['status'] !== 'pending') {
