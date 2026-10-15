@@ -127,6 +127,36 @@ function migrate_billing_schema(PDO $pdo): void
     if (!column_exists($pdo, 'chamas', 'suspension_reason')) {
         $pdo->exec("ALTER TABLE chamas ADD COLUMN suspension_reason VARCHAR(30) NOT NULL DEFAULT '' AFTER status");
     }
+    if (!column_exists($pdo, 'chamas', 'monthly_dues')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN monthly_dues DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER monthly_fee");
+    }
+
+    if (!column_exists($pdo, 'mpesa_payments', 'id')) {
+        $pdo->exec("CREATE TABLE mpesa_payments (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            chama_id INT UNSIGNED NOT NULL,
+            purpose ENUM('contribution','loan_repayment') NOT NULL,
+            member_id INT UNSIGNED NULL,
+            loan_id INT UNSIGNED NULL,
+            amount DECIMAL(12,2) NOT NULL,
+            phone VARCHAR(30) NOT NULL DEFAULT '',
+            status ENUM('pending','paid','failed','cancelled') NOT NULL DEFAULT 'pending',
+            checkout_request_id VARCHAR(120) NULL,
+            merchant_request_id VARCHAR(120) NULL,
+            mpesa_receipt VARCHAR(50) NULL,
+            result_record_id INT UNSIGNED NULL,
+            notes VARCHAR(255) NOT NULL DEFAULT '',
+            initiated_by INT UNSIGNED NULL,
+            paid_at DATETIME NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_mpaya_chama (chama_id),
+            KEY idx_mpaya_member (member_id),
+            KEY idx_mpaya_checkout (checkout_request_id),
+            KEY idx_mpaya_status (status),
+            UNIQUE KEY uq_mpaya_receipt (mpesa_receipt)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
 
     if (!column_exists($pdo, 'subscription_payments', 'id')) {
         $pdo->exec("CREATE TABLE subscription_payments (

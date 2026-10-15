@@ -1,15 +1,77 @@
 <?php
 /**
- * JSON status poller for a pending subscription payment.
- * Used by the "waiting for confirmation" panel on the billing pages.
- * In live mode it also asks Daraja directly, so a lost callback still resolves.
+ * JSON status poller for pending M-Pesa payments.
+ *
+ *   ?payment_id=N  -> subscription_payments (platform fee)
+ *   ?pay=N         -> mpesa_payments (member dues / loan repayment)
+ *
+ * Used by the "waiting for confirmation" panels. In live mode it also asks
+ * Daraja directly, so a lost callback still resolves.
  */
 
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/mpesa_payments.php';
 require_login();
 
 header('Content-Type: application/json');
 
+$user = current_user();
+
+// --- Member-facing payments -------------------------------------------------
+$payId = (int)($_GET['pay'] ?? 0);
+if ($payId > 0) {
+    $stmt = $pdo->prepare('SELECT * FROM mpesa_payments WHERE id = ? LIMIT 1');
+    $stmt->execute([$payId]);
+    $payment = $stmt->fetch();
+
+    if (!$payment) {
+        echo json_encode(['status' => 'missing', 'message' => 'Payment request not found.']);
+        exit;
+    }
+    if (!mpesa_pay_visible_to($payment, $user)) {
+        http_response_code(403);
+        echo json_encode(['status' => 'forbidden', 'message' => 'Not your payment.']);
+        exit;
+    }
+
+    // Pending + live mode? Ask Daraja for the real result.
+    if ($payment['status'] === 'pending' && !mpesa_is_simulation() && !empty($payment['checkout_request_id'])) {
+        $query = mpesa_query_stk((string)$payment['checkout_request_id']);
+        if (!empty($query['paid'])) {
+            mpesa_pay_complete((int)$payment['id'], (string)($query['receipt'] ?? ''), (string)$payment['phone'], (float)$payment['amount']);
+        } elseif (isset($query['raw']['ResultCode']) && (int)$query['raw']['ResultCode'] !== 0) {
+            mpesa_pay_fail((int)$payment['id'], (string)($query['raw']['ResultDesc'] ?? 'Daraja rejected the request'));
+        }
+        $stmt->execute([$payId]);
+        $payment = $stmt->fetch();
+    }
+
+    $extra = [];
+    if ($payment['status'] === 'paid') {
+        if ($payment['purpose'] === 'contribution') {
+            $stmt = $pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM contributions WHERE member_id = ?');
+            $stmt->execute([(int)$payment['member_id']]);
+            $extra['member_total'] = (float)$stmt->fetchColumn();
+        } else {
+            $stmt = $pdo->prepare('SELECT balance, status FROM loans WHERE id = ?');
+            $stmt->execute([(int)$payment['loan_id']]);
+            $loan = $stmt->fetch();
+            $extra['loan_balance'] = (float)($loan['balance'] ?? 0);
+            $extra['loan_status'] = $loan['status'] ?? '';
+        }
+    }
+
+    echo json_encode(array_merge([
+        'status' => $payment['status'],
+        'receipt' => $payment['mpesa_receipt'],
+        'amount' => (float)$payment['amount'],
+        'purpose' => $payment['purpose'],
+        'message' => $payment['notes'] ?: '',
+    ], $extra));
+    exit;
+}
+
+// --- Platform subscription payments ----------------------------------------
 $paymentId = (int)($_GET['payment_id'] ?? 0);
 $stmt = $pdo->prepare('SELECT * FROM subscription_payments WHERE id = ? LIMIT 1');
 $stmt->execute([$paymentId]);
@@ -20,14 +82,12 @@ if (!$payment) {
     exit;
 }
 
-// Tenancy: a chama user may only poll their own group's payments.
 if (!is_superadmin() && (int)$payment['chama_id'] !== (int)current_chama_id()) {
     http_response_code(403);
     echo json_encode(['status' => 'forbidden', 'message' => 'Not your payment.']);
     exit;
 }
 
-// Still pending in live mode? Ask Daraja for the real result.
 if ($payment['status'] === 'pending' && !mpesa_is_simulation() && !empty($payment['checkout_request_id'])) {
     $query = mpesa_query_stk((string)$payment['checkout_request_id']);
     if (!empty($query['paid'])) {

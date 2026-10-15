@@ -18,6 +18,7 @@
  */
 
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/mpesa_payments.php';
 
 header('Content-Type: application/json');
 
@@ -77,6 +78,39 @@ $stmt->execute([$checkoutId]);
 $payment = $stmt->fetch();
 
 if (!$payment) {
+    // --- Not a subscription: try member payments (dues / loan repayments) ---
+    $stmt = $pdo->prepare("SELECT * FROM mpesa_payments WHERE checkout_request_id = ? ORDER BY id DESC LIMIT 1");
+    $stmt->execute([$checkoutId]);
+    $memberPayment = $stmt->fetch();
+
+    if ($memberPayment) {
+        if ($merchantId !== '' && empty($memberPayment['merchant_request_id'])) {
+            $pdo->prepare('UPDATE mpesa_payments SET merchant_request_id = ? WHERE id = ?')
+                ->execute([$merchantId, (int)$memberPayment['id']]);
+        }
+
+        if ($resultCode === 0) {
+            $ok = mpesa_pay_complete((int)$memberPayment['id'], (string)$receipt, $phone, $amount);
+            mpesa_log('in', $ok ? 'callback:paid' : 'callback:error', [
+                'mpesa_payment_id' => (int)$memberPayment['id'],
+                'purpose' => $memberPayment['purpose'],
+                'member_id' => (int)$memberPayment['member_id'],
+                'loan_id' => $memberPayment['loan_id'],
+                'receipt' => $receipt,
+                'amount' => $amount,
+            ], $checkoutId, $receipt);
+            $respond($ok ? 0 : 1, $ok ? 'Accepted' : 'Processing failed');
+        }
+
+        mpesa_pay_fail((int)$memberPayment['id'], $resultDesc !== '' ? $resultDesc : ('Daraja result code ' . $resultCode));
+        mpesa_log('in', 'callback:failed', [
+            'mpesa_payment_id' => (int)$memberPayment['id'],
+            'result_code' => $resultCode,
+            'result_desc' => $resultDesc,
+        ], $checkoutId);
+        $respond(0, 'Accepted');
+    }
+
     mpesa_log('in', 'callback:unmatched', ['checkout_request_id' => $checkoutId, 'result_code' => $resultCode], $checkoutId, $receipt);
     $respond(1, 'No matching payment request');
 }

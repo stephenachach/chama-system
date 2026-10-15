@@ -102,6 +102,30 @@ Plan created ──► active (days left shown everywhere)
 - A payment extends from the current expiry when the plan is still valid (pre-paying
   stacks months) or from today when it has already lapsed.
 
+## Member payments: dues & loan repayments by M-Pesa (Phase 2b)
+
+Members (and their treasurer/admin on their behalf) pay straight from a phone:
+
+1. A member opens **Pay Dues** (or the "Pay my dues by M-Pesa" button on their
+   dashboard), confirms the amount (pre-filled with the group's *member dues*)
+   and their phone number, and taps **Send STK Push**.
+2. Safaricom prompts for their PIN. On success the callback creates the
+   **contribution record automatically** - type `mpesa`, reference = the M-Pesa
+   receipt number. No manual data entry, no disputes about who paid.
+3. For loans: **Loans -> Pay M-Pesa** on any approved loan with a balance. The
+   repayment row is created and the balance reduced in one transaction; when the
+   balance reaches zero the loan flips to `paid`. Amounts above the balance are
+   clamped so nobody can overpay.
+4. Treasurers see live "M-Pesa requests awaiting confirmation" on the
+   Contributions page and an `M-Pesa` badge on every auto-recorded contribution.
+
+Safety: a member can only pay for themselves; a receipt can only be used once
+platform-wide; every payment is tenant-scoped; cancelled prompts create no
+records; and the same completion code runs for the real callback and the demo
+"simulate customer paid" button.
+
+Set the suggested dues per group in **Chamas -> Edit -> Member dues**.
+
 ## M-Pesa (Daraja) STK Push
 
 ### Demo mode — works out of the box
@@ -177,6 +201,9 @@ screen polls `mpesa/status.php`, which asks Daraja directly for the result.
 | `billing/pay.php` | Send an STK prompt to a chama (1–12 months) |
 | `billing/mark_paid.php` | Record cash/bank/cheque payment |
 | `billing/extend.php` | Grant free days (audited as a `trial` entry) |
+| `contributions/pay.php` | Member/treasurer: pay dues by STK (auto-records the contribution) |
+| `loans/repay.php` | Member/treasurer: repay a loan by STK (auto-updates the balance) |
+| `includes/mpesa_payments.php` | Payment engine for dues & repayments (pending -> paid/failed) |
 | `account/subscription.php` | A chama's own plan, expiry, M-Pesa payment and history |
 | `cron/subscriptions.php` | Optional scheduled enforcement + report |
 | `storage/` | OAuth token cache and maintenance lock (writable, git-ignored) |
@@ -202,7 +229,7 @@ screen polls `mpesa/status.php`, which asks Daraja directly for the result.
 
 - [x] Phase 1 — Multi-tenancy (per-chama isolation, superadmin platform, auto-upgrade)
 - [x] Phase 2 — Subscription billing: plan expiry, M-Pesa STK Push, auto-suspension
-- [ ] Phase 2b — STK Push for member contributions and loan repayments
+- [x] Phase 2b — STK Push for member dues and loan repayments (auto-recorded)
 - [ ] Phase 3 — SMS reminders (Africa's Talking), PDF statements, audit log
 - [ ] Phase 4 — Sell: KES 5,000–10,000 setup + KES 500–1,500/month per chama
 - [ ] Mobile PWA polish

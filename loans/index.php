@@ -60,8 +60,11 @@ $loans = $stmt->fetchAll();
                         <td>
                             <?php if (!$isMember): ?>
                                 <?php if ($l['status']==='pending'): ?><a class="btn btn-sm btn-outline-success" href="<?= url('users/approvals.php?loan_id='.$l['id']) ?>">Approve/Reject</a><?php endif; ?>
-                                <?php if ($l['status']==='approved'): ?><a class="btn btn-sm btn-outline-primary" href="<?= url('loans/repayment.php?id='.$l['id']) ?>">Repay</a><?php endif; ?>
+                                <?php if ($l['status']==='approved'): ?><a class="btn btn-sm btn-outline-primary" href="<?= url('loans/repayment.php?id='.$l['id']) ?>">Record</a><?php endif; ?>
                                 <?php if ($isAdmin): ?><a class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete loan?')" href="<?= url('loans/delete.php?id='.$l['id']) ?>">Delete</a><?php endif; ?>
+                            <?php endif; ?>
+                            <?php if (in_array($l['status'], ['approved','paid'], true) && (float)$l['balance'] > 0 && (!$isMember || (int)$l['member_id'] === $memberId)): ?>
+                                <a class="btn btn-sm btn-success" href="<?= url('loans/repay.php?id='.$l['id']) ?>"><i class="fa-solid fa-mobile-screen me-1"></i>Pay M-Pesa</a>
                             <?php endif; ?>
                         </td>
                     </tr>

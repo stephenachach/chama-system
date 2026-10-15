@@ -419,7 +419,9 @@ function initiate_subscription_stk(array $chama, string $phone, ?int $userId, in
     }
 
     $accountRef = 'CHAMA' . (int)$chama['id'];
-    $description = 'Subscription ' . $period['start'] . ' to ' . $period['end'];
+    // Daraja limits TransactionDesc to 13 characters; keep the period in our
+    // own records instead.
+    $description = 'Subscription';
 
     $result = mpesa_stk_push($normalized, $amount, $accountRef, $description);
     if (!$result['ok']) {

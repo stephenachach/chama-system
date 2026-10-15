@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $plan = $_POST['plan'] ?? 'free';
     $monthly_fee = (float)($_POST['monthly_fee'] ?? 0);
+    $monthly_dues = (float)($_POST['monthly_dues'] ?? 0);
     $plan_expires_at = $_POST['plan_expires_at'] ?? '';
     $started_at = $_POST['started_at'] ?? '';
     $notes = trim($_POST['notes'] ?? '');
@@ -47,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $expiry = date('Y-m-d', strtotime('+1 month -1 day'));
         }
 
-        $stmt = $pdo->prepare('UPDATE chamas SET name = ?, phone = ?, billing_phone = ?, email = ?, plan = ?, monthly_fee = ?, plan_expires_at = ?, started_at = ?, notes = ? WHERE id = ?');
-        $stmt->execute([$name, $phone, $billing_phone, $email, $plan, max(0, $monthly_fee), $expiry, $started_at !== '' ? $started_at : null, $notes, $id]);
+        $stmt = $pdo->prepare('UPDATE chamas SET name = ?, phone = ?, billing_phone = ?, email = ?, plan = ?, monthly_fee = ?, monthly_dues = ?, plan_expires_at = ?, started_at = ?, notes = ? WHERE id = ?');
+        $stmt->execute([$name, $phone, $billing_phone, $email, $plan, max(0, $monthly_fee), max(0, $monthly_dues), $expiry, $started_at !== '' ? $started_at : null, $notes, $id]);
         flash_success('Chama updated successfully.');
         header('Location: ' . url('chamas/index.php'));
         exit;
@@ -109,7 +110,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <option value="pro" <?= $chama['plan'] === 'pro' ? 'selected' : '' ?>>Pro (paid monthly)</option>
                 </select>
             </div>
-            <div class="col-md-3"><label class="form-label">Monthly Fee (KES)</label><input type="number" step="0.01" min="0" class="form-control" name="monthly_fee" value="<?= e($chama['monthly_fee']) ?>"></div>
+            <div class="col-md-3"><label class="form-label">Monthly Fee (KES)</label><input type="number" step="0.01" min="0" class="form-control" name="monthly_fee" value="<?= e($chama['monthly_fee']) ?>">
+                <div class="form-text">Chama pays the platform.</div></div>
+            <div class="col-md-3"><label class="form-label">Member dues (KES/mo)</label><input type="number" step="0.01" min="0" class="form-control" name="monthly_dues" value="<?= e($chama['monthly_dues'] ?? 0) ?>">
+                <div class="form-text">Suggested amount members pay.</div></div>
             <div class="col-md-3"><label class="form-label">Plan expires at</label><input type="date" class="form-control" name="plan_expires_at" value="<?= e($chama['plan_expires_at'] ?? '') ?>">
                 <div class="form-text">Blank + a fee = starts a new month. Blank + no fee = never expires.</div></div>
             <div class="col-md-3"><label class="form-label">Billing phone (M-Pesa)</label><input class="form-control" name="billing_phone" value="<?= e($chama['billing_phone'] ?? '') ?>"></div>

@@ -15,6 +15,7 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS mpesa_payments;
 DROP TABLE IF EXISTS mpesa_logs;
 DROP TABLE IF EXISTS subscription_payments;
 DROP TABLE IF EXISTS loan_repayments;
@@ -34,7 +35,8 @@ CREATE TABLE chamas (
     billing_phone VARCHAR(30) NOT NULL DEFAULT '' COMMENT 'M-Pesa number billed for the subscription',
     email VARCHAR(150) NOT NULL DEFAULT '',
     plan ENUM('free','pro') NOT NULL DEFAULT 'free',
-    monthly_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+    monthly_fee DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT 'what the CHAMA pays the platform',
+    monthly_dues DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT 'what each MEMBER pays the chama per month',
     plan_expires_at DATE NULL COMMENT 'NULL = never expires',
     status ENUM('active','suspended') NOT NULL DEFAULT 'active',
     suspension_reason VARCHAR(30) NOT NULL DEFAULT '' COMMENT 'nonpayment | manual | empty',
@@ -151,6 +153,32 @@ CREATE TABLE subscription_payments (
     KEY idx_subpay_checkout (checkout_request_id),
     KEY idx_subpay_status (status),
     UNIQUE KEY uq_subpay_receipt (mpesa_receipt)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Member-facing M-Pesa payments: dues and loan repayments (Phase 2b).
+CREATE TABLE mpesa_payments (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chama_id INT UNSIGNED NOT NULL,
+    purpose ENUM('contribution','loan_repayment') NOT NULL,
+    member_id INT UNSIGNED NULL,
+    loan_id INT UNSIGNED NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    phone VARCHAR(30) NOT NULL DEFAULT '',
+    status ENUM('pending','paid','failed','cancelled') NOT NULL DEFAULT 'pending',
+    checkout_request_id VARCHAR(120) NULL,
+    merchant_request_id VARCHAR(120) NULL,
+    mpesa_receipt VARCHAR(50) NULL,
+    result_record_id INT UNSIGNED NULL,
+    notes VARCHAR(255) NOT NULL DEFAULT '',
+    initiated_by INT UNSIGNED NULL,
+    paid_at DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_mpaya_chama (chama_id),
+    KEY idx_mpaya_member (member_id),
+    KEY idx_mpaya_checkout (checkout_request_id),
+    KEY idx_mpaya_status (status),
+    UNIQUE KEY uq_mpaya_receipt (mpesa_receipt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Raw trail of every Daraja request, callback and billing event.

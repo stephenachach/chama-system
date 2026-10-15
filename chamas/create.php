@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $plan = $_POST['plan'] ?? 'free';
     $monthly_fee = (float)($_POST['monthly_fee'] ?? 0);
+    $monthly_dues = (float)($_POST['monthly_dues'] ?? 0);
     $trial_days = max(0, min(365, (int)($_POST['trial_days'] ?? 30)));
     $started_at = $_POST['started_at'] ?? '';
     $notes = trim($_POST['notes'] ?? '');
@@ -54,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : date('Y-m-d', strtotime('+1 month -1 day'));
             }
 
-            $stmt = $pdo->prepare("INSERT INTO chamas (name, slug, phone, billing_phone, email, plan, monthly_fee, plan_expires_at, status, started_at, notes) VALUES (?,?,?,?,?,?,?,?, 'active', ?, ?)");
-            $stmt->execute([$name, $slug, $phone, $billing_phone !== '' ? $billing_phone : $phone, $email, $plan, $monthly_fee, $planExpiresAt, $started_at !== '' ? $started_at : null, $notes]);
+            $stmt = $pdo->prepare("INSERT INTO chamas (name, slug, phone, billing_phone, email, plan, monthly_fee, monthly_dues, plan_expires_at, status, started_at, notes) VALUES (?,?,?,?,?,?,?,?,?, 'active', ?, ?)");
+            $stmt->execute([$name, $slug, $phone, $billing_phone !== '' ? $billing_phone : $phone, $email, $plan, $monthly_fee, max(0, $monthly_dues), $planExpiresAt, $started_at !== '' ? $started_at : null, $notes]);
             $chamaId = (int)$pdo->lastInsertId();
 
             $stmt = $pdo->prepare("INSERT INTO users (chama_id, member_id, name, email, password, role, account_status) VALUES (?, NULL, ?, ?, ?, 'admin', 'approved')");
@@ -105,6 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="col-md-3"><label class="form-label">Monthly Fee (KES)</label><input type="number" step="0.01" min="0" class="form-control" name="monthly_fee" value="<?= e($_POST['monthly_fee'] ?? '500') ?>">
                 <div class="form-text">0 = never billed or suspended.</div></div>
+            <div class="col-md-3"><label class="form-label">Member dues (KES/mo)</label><input type="number" step="0.01" min="0" class="form-control" name="monthly_dues" value="<?= e($_POST['monthly_dues'] ?? '0') ?>">
+                <div class="form-text">What each member pays this chama.</div></div>
             <div class="col-md-3"><label class="form-label">Free trial (days)</label><input type="number" min="0" max="365" class="form-control" name="trial_days" value="<?= e($_POST['trial_days'] ?? '30') ?>">
                 <div class="form-text">Billing starts after these days.</div></div>
             <div class="col-md-3"><label class="form-label">Started On</label><input type="date" class="form-control" name="started_at" value="<?= e($_POST['started_at'] ?? '') ?>"></div>

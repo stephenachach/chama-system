@@ -200,7 +200,8 @@ if ($isManager) {
         <div class="card bg-surface-alt border rounded-4 p-3 w-100 w-md-auto">
             <div class="text-muted small mb-2">Need help?</div>
             <p class="mb-1">You can apply for a loan and track your application status here.</p>
-            <a class="btn btn-primary btn-sm mt-3" href="<?= url('loans/create.php') ?>">Apply for Loan</a>
+            <a class="btn btn-success btn-sm mt-2" href="<?= url('contributions/pay.php') ?>"><i class="fa-solid fa-mobile-screen me-1"></i>Pay my dues by M-Pesa</a>
+            <a class="btn btn-primary btn-sm mt-2" href="<?= url('loans/create.php') ?>">Apply for Loan</a>
         </div>
         <?php endif; ?>
     </div>
