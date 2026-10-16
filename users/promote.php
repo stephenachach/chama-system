@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin']);
 
 $id = (int)($_GET['id'] ?? 0);
@@ -27,6 +29,7 @@ if ($user['role'] !== 'member' || ($user['account_status'] ?? 'approved') !== 'a
 try {
     $stmt = $pdo->prepare("UPDATE users SET role = 'treasurer' WHERE id = ? AND chama_id = ?");
     $stmt->execute([$id, current_chama_id()]);
+    audit_log('user.promote', 'user', $id, sprintf('Promoted %s to treasurer', $user['name'] ?? ('user #' . $id)));
     flash_success('Member promoted to treasurer successfully.');
 } catch (PDOException $e) {
     flash_error('Could not promote user. Please try again.');

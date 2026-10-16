@@ -100,6 +100,8 @@ $showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expir
                         <li class="nav-item"><a class="nav-link <?= $activeWelfare ? 'active' : '' ?>" href="<?= url('welfare/index.php') ?>"><i class="fa-solid fa-heart me-1"></i>Welfare</a></li>
                         <li class="nav-item"><a class="nav-link <?= $activeReports ? 'active' : '' ?>" href="<?= url('reports/index.php') ?>"><i class="fa-solid fa-chart-pie me-1"></i>Reports</a></li>
                         <li class="nav-item"><a class="nav-link <?= $activeApprovals ? 'active' : '' ?>" href="<?= url('users/approvals.php') ?>"><i class="fa-solid fa-clipboard-check me-1"></i>Approvals</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $currentFolder === 'sms' ? 'active' : '' ?>" href="<?= url('sms/index.php') ?>"><i class="fa-solid fa-comment-sms me-1"></i>SMS</a></li>
+                        <li class="nav-item"><a class="nav-link <?= $currentFolder === 'audit' ? 'active' : '' ?>" href="<?= url('audit/index.php') ?>"><i class="fa-solid fa-shield-halved me-1"></i>Audit Log</a></li>
                     <?php endif; ?>
                     <?php if ($user['role'] === 'admin'): ?>
                         <li class="nav-item"><a class="nav-link <?= $activeUsers ? 'active' : '' ?>" href="<?= url('users/index.php') ?>"><i class="fa-solid fa-user-shield me-1"></i>Users</a></li>

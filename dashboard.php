@@ -202,6 +202,7 @@ if ($isManager) {
             <p class="mb-1">You can apply for a loan and track your application status here.</p>
             <a class="btn btn-success btn-sm mt-2" href="<?= url('contributions/pay.php') ?>"><i class="fa-solid fa-mobile-screen me-1"></i>Pay my dues by M-Pesa</a>
             <a class="btn btn-primary btn-sm mt-2" href="<?= url('loans/create.php') ?>">Apply for Loan</a>
+            <a class="btn btn-outline-secondary btn-sm mt-2" href="<?= url('members/statement.php') ?>"><i class="fa-solid fa-file-pdf me-1"></i>My statement (PDF)</a>
         </div>
         <?php endif; ?>
     </div>

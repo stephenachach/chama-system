@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Approve Welfare';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 $id = (int)($_GET['id'] ?? 0);
@@ -23,10 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'approve') {
         $stmt = $pdo->prepare("UPDATE welfare_payouts SET status='approved', approved_date=? WHERE id=?");
-        $stmt->execute([date('Y-m-d'), $id]); flash_success('Welfare request approved.');
+        $stmt->execute([date('Y-m-d'), $id]);
+        audit_log('welfare.approve', 'welfare', $id, sprintf('Approved welfare payout of KSh %s', number_format((float)$welfare['amount'], 2)));
+        flash_success('Welfare request approved.');
     } elseif ($action === 'reject') {
         $stmt = $pdo->prepare("UPDATE welfare_payouts SET status='rejected', approved_date=NULL WHERE id=?");
-        $stmt->execute([$id]); flash_success('Welfare request rejected.');
+        $stmt->execute([$id]);
+        audit_log('welfare.reject', 'welfare', $id, sprintf('Rejected welfare payout of KSh %s', number_format((float)$welfare['amount'], 2)));
+        flash_success('Welfare request rejected.');
     }
     header('Location: ' . url('welfare/index.php')); exit;
 }

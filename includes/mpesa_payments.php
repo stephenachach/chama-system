@@ -13,6 +13,8 @@
  */
 
 require_once __DIR__ . '/mpesa.php';
+require_once __DIR__ . '/sms.php';
+require_once __DIR__ . '/audit.php';
 
 /**
  * Start a contribution or loan-repayment payment.
@@ -188,6 +190,37 @@ function mpesa_pay_complete(int $paymentId, string $receipt, ?string $phone, ?fl
         )->execute([$receipt !== '' ? $receipt : null, $phone ?: null, $recordId, $paymentId]);
 
         $pdo->commit();
+
+        // Phase 3: audit trail + confirmation SMS. Never allowed to fail the
+        // payment itself, so everything below is best-effort.
+        try {
+            $stmt = $pdo->prepare('SELECT * FROM chamas WHERE id = ? LIMIT 1');
+            $stmt->execute([(int)$payment['chama_id']]);
+            $chama = $stmt->fetch() ?: [];
+            $member = [];
+            if (!empty($payment['member_id'])) {
+                $stmt = $pdo->prepare('SELECT * FROM members WHERE id = ? LIMIT 1');
+                $stmt->execute([(int)$payment['member_id']]);
+                $member = $stmt->fetch() ?: [];
+            }
+            $who = $member['full_name'] ?? ('member #' . $payment['member_id']);
+            $phone = $phone !== null && $phone !== '' ? $phone : (string)($member['phone'] ?? '');
+
+            if ($payment['purpose'] === 'contribution') {
+                audit_log('payment.contribution_paid', 'payment', $paymentId, sprintf('%s paid KSh %s by M-Pesa (receipt %s); contribution recorded automatically', $who, number_format((float)$payment['amount'], 2), $receipt), ['receipt' => $receipt, 'record_id' => $recordId]);
+                sms_payment_receipt($chama, $member, $phone, 'monthly dues', (float)$payment['amount'], $receipt);
+            } else {
+                $stmt = $pdo->prepare('SELECT balance, status FROM loans WHERE id = ? LIMIT 1');
+                $stmt->execute([(int)$payment['loan_id']]);
+                $loan = $stmt->fetch() ?: [];
+                $bal = (float)($loan['balance'] ?? 0);
+                $extra = $bal > 0 ? sprintf('Balance KSh %s. ', number_format($bal, 2)) : 'Loan fully settled. ';
+                audit_log('payment.loan_repaid', 'payment', $paymentId, sprintf('%s repaid KSh %s by M-Pesa (receipt %s); loan balance now KSh %s', $who, number_format((float)$payment['amount'], 2), $receipt, number_format($bal, 2)), ['receipt' => $receipt, 'loan_id' => $payment['loan_id'], 'record_id' => $recordId]);
+                sms_payment_receipt($chama, $member, $phone, 'loan repayment', (float)$payment['amount'], $receipt, $extra);
+            }
+        } catch (Throwable $ignored) {
+        }
+
         return true;
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {

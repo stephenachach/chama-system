@@ -1,6 +1,8 @@
 <?php
 $page_title = 'New Chama';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['superadmin']);
 require_once __DIR__ . '/../includes/header.php';
 
@@ -65,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             $expiryNote = $planExpiresAt ? ' Subscription runs to ' . date('d M Y', strtotime($planExpiresAt)) . '.' : '';
             flash_success("Chama “{$name}” created. Its admin can log in with {$admin_email} and the password you set. Public registration link: " . url('register.php?chama=' . $slug) . $expiryNote);
+            audit_log('chama.create', 'chama', (int)$pdo->lastInsertId(), sprintf('Created chama %s (%s plan, fee KSh %s)', $name, $plan, number_format($monthly_fee, 2)));
             header('Location: ' . url('chamas/index.php'));
             exit;
         } catch (PDOException $e) {

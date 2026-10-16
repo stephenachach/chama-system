@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 
 $id = (int)($_GET['id'] ?? 0);
@@ -36,6 +38,7 @@ try {
             $stmt->execute([$user['member_id'], $chamaId]);
         }
 
+        audit_log('user.approve', 'user', $id, sprintf('Approved registration of %s (%s)', $user['name'], $user['email']));
         flash_success('Member registration approved successfully. The member can now login.');
     } elseif ($action === 'reject') {
         $stmt = $pdo->prepare("UPDATE users SET account_status = 'rejected', role = 'member' WHERE id = ? AND chama_id = ?");

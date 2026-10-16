@@ -37,6 +37,10 @@ CREATE TABLE chamas (
     plan ENUM('free','pro') NOT NULL DEFAULT 'free',
     monthly_fee DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT 'what the CHAMA pays the platform',
     monthly_dues DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT 'what each MEMBER pays the chama per month',
+    sms_enabled TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'monthly dues reminders on/off',
+    sms_receipts TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'send confirmation SMS when money lands',
+    sms_reminder_day TINYINT UNSIGNED NOT NULL DEFAULT 5 COMMENT 'day of month for the reminder, 1-28',
+    sms_last_reminder DATE NULL COMMENT 'last day a reminder batch was sent',
     plan_expires_at DATE NULL COMMENT 'NULL = never expires',
     status ENUM('active','suspended') NOT NULL DEFAULT 'active',
     suspension_reason VARCHAR(30) NOT NULL DEFAULT '' COMMENT 'nonpayment | manual | empty',
@@ -192,6 +196,46 @@ CREATE TABLE mpesa_logs (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_mpesalog_checkout (checkout_request_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------------
+-- Phase 3: SMS messaging and the audit trail
+-- ---------------------------------------------------------------------------
+CREATE TABLE sms_logs (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chama_id INT UNSIGNED NULL,
+    member_id INT UNSIGNED NULL,
+    phone VARCHAR(30) NOT NULL DEFAULT '',
+    purpose ENUM('receipt','reminder','broadcast','loan','notice') NOT NULL DEFAULT 'notice',
+    message VARCHAR(480) NOT NULL DEFAULT '',
+    provider VARCHAR(40) NOT NULL DEFAULT 'simulation',
+    status ENUM('queued','sent','simulated','failed') NOT NULL DEFAULT 'queued',
+    provider_message_id VARCHAR(120) NULL,
+    error VARCHAR(255) NOT NULL DEFAULT '',
+    created_by INT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_smslog_chama (chama_id),
+    KEY idx_smslog_member (member_id),
+    KEY idx_smslog_purpose (purpose, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE audit_logs (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    chama_id INT UNSIGNED NULL,
+    user_id INT UNSIGNED NULL,
+    actor VARCHAR(150) NOT NULL DEFAULT '',
+    action VARCHAR(80) NOT NULL DEFAULT '',
+    entity_type VARCHAR(40) NOT NULL DEFAULT '',
+    entity_id INT UNSIGNED NULL,
+    description VARCHAR(480) NOT NULL DEFAULT '',
+    meta TEXT NULL,
+    ip_address VARCHAR(45) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_audit_chama (chama_id, created_at),
+    KEY idx_audit_action (action),
+    KEY idx_audit_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;

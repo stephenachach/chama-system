@@ -49,7 +49,7 @@ foreach ($chamas as $c) {
     $expiry = $s['expires_at'] ? date('Y-m-d', strtotime((string)$s['expires_at'])) : 'never';
     $lines[] = sprintf(
         '%-28s %-9s fee %8s  expires %s  [%s]%s',
-        mb_substr($c['name'], 0, 28),
+        str_cut($c['name'], 28),
         $c['plan'],
         number_format((float)$c['monthly_fee'], 2),
         $expiry,

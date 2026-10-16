@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Add User';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin']);
 require_once __DIR__ . '/../includes/header.php';
 $stmt = $pdo->prepare('SELECT id, member_no, full_name FROM members WHERE chama_id = ? ORDER BY full_name');
@@ -36,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = $pdo->prepare('INSERT INTO users (chama_id, member_id, name, email, password, role, account_status) VALUES (?,?,?,?,?,?,?)');
             $stmt->execute([$chamaId, $member_id, $name, $email, password_hash($password, PASSWORD_DEFAULT), $role, 'approved']);
+            audit_log('user.create', 'user', (int)$pdo->lastInsertId(), sprintf('Created %s account for %s (%s)', $role, $name, $email));
             flash_success('User account created successfully.');
             header('Location: ' . url('users/index.php')); exit;
         } catch (PDOException $e) { flash_error('Could not create user. Email may already exist.'); }

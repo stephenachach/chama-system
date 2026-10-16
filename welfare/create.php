@@ -1,6 +1,8 @@
 <?php
 $page_title = 'New Welfare Request';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 $stmt = $pdo->prepare("SELECT id, member_no, full_name FROM members WHERE chama_id = ? AND status='active' ORDER BY full_name");
@@ -33,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $stmt = $pdo->prepare('INSERT INTO welfare_payouts (chama_id, member_id, amount, reason, request_date, notes) VALUES (?,?,?,?,?,?)');
             $stmt->execute([$chamaId, $member_id, $amount, $reason, $request_date, $notes]);
+            audit_log('welfare.add', 'welfare', (int)$pdo->lastInsertId(), sprintf('Welfare payout request of KSh %s (%s)', number_format($amount, 2), $reason));
             flash_success('Welfare request recorded successfully.');
             header('Location: ' . url('welfare/index.php')); exit;
         }

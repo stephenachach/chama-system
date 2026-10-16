@@ -1,6 +1,8 @@
 <?php
 $page_title = 'My Account';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_login();
 require_once __DIR__ . '/../includes/header.php';
 $user = current_user();
@@ -23,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $stmt = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
         $stmt->execute([password_hash($new, PASSWORD_DEFAULT), $user['id']]);
+        audit_log('user.password', 'user', (int)$user['id'], 'Password changed');
         flash_success('Your password has been changed successfully.');
         header('Location: ' . url('account/password.php'));
         exit;

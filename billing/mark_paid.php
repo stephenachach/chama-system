@@ -4,6 +4,8 @@
  * Superadmin only.
  */
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['superadmin']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -50,6 +52,7 @@ if ($paymentId) {
     $stmt = $pdo->prepare('SELECT plan_expires_at FROM chamas WHERE id = ?');
     $stmt->execute([$chamaId]);
     $newExpiry = (string)$stmt->fetchColumn();
+    audit_log('billing.mark_paid', 'subscription', $paymentId, sprintf('%s: recorded %s offline payment (%s), plan to %s', $chama['name'], money($amount), $method, date('d M Y', strtotime($newExpiry))), ['chama_id' => $chamaId]);
     flash_success($chama['name'] . ': ' . money($amount) . ' recorded. Plan now runs to ' . date('d M Y', strtotime($newExpiry)) . '.');
 } else {
     flash_error('Could not record the payment.');

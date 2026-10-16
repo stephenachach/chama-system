@@ -1,6 +1,8 @@
 <?php
 $page_title = 'New Loan Application';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','member']);
 require_once __DIR__ . '/../includes/header.php';
 $user = current_user();
@@ -42,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $stmt = $pdo->prepare('INSERT INTO loans (chama_id, member_id, amount, interest_rate, total_payable, balance, purpose, application_date) VALUES (?,?,?,?,?,?,?,?)');
             $stmt->execute([$chamaId, $member_id, $amount, $interest, $total, $total, $purpose, $date]);
+            audit_log('loan.create', 'loan', (int)$pdo->lastInsertId(), sprintf('Loan application of KSh %s at %s%% interest', number_format($amount, 2), $interest), ['purpose' => $purpose]);
             flash_success('Loan application created successfully.');
             header('Location: ' . url('loans/index.php')); exit;
         }

@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Edit Chama';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['superadmin']);
 require_once __DIR__ . '/../includes/header.php';
 
@@ -37,6 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $plan_expires_at = $_POST['plan_expires_at'] ?? '';
     $started_at = $_POST['started_at'] ?? '';
     $notes = trim($_POST['notes'] ?? '');
+    $sms_enabled = ((int)($_POST['sms_enabled'] ?? 0)) === 1 ? 1 : 0;
+    $sms_receipts = ((int)($_POST['sms_receipts'] ?? 1)) === 0 ? 0 : 1;
+    $sms_reminder_day = max(1, min(28, (int)($_POST['sms_reminder_day'] ?? 5)));
 
     if ($name === '' || !in_array($plan, ['free', 'pro'], true)) {
         flash_error('Chama name is required and plan must be valid.');
@@ -48,8 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $expiry = date('Y-m-d', strtotime('+1 month -1 day'));
         }
 
-        $stmt = $pdo->prepare('UPDATE chamas SET name = ?, phone = ?, billing_phone = ?, email = ?, plan = ?, monthly_fee = ?, monthly_dues = ?, plan_expires_at = ?, started_at = ?, notes = ? WHERE id = ?');
-        $stmt->execute([$name, $phone, $billing_phone, $email, $plan, max(0, $monthly_fee), max(0, $monthly_dues), $expiry, $started_at !== '' ? $started_at : null, $notes, $id]);
+        $stmt = $pdo->prepare('UPDATE chamas SET name = ?, phone = ?, billing_phone = ?, email = ?, plan = ?, monthly_fee = ?, monthly_dues = ?, sms_enabled = ?, sms_receipts = ?, sms_reminder_day = ?, plan_expires_at = ?, started_at = ?, notes = ? WHERE id = ?');
+        $stmt->execute([$name, $phone, $billing_phone, $email, $plan, max(0, $monthly_fee), max(0, $monthly_dues), $sms_enabled, $sms_receipts, $sms_reminder_day, $expiry, $started_at !== '' ? $started_at : null, $notes, $id]);
+        audit_log('chama.update', 'chama', $id, sprintf('Updated chama settings (%s, plan %s, fee KSh %s, dues KSh %s)', $name, $plan, number_format(max(0, $monthly_fee), 2), number_format(max(0, $monthly_dues), 2)), ['before' => ['plan' => $chama['plan'], 'monthly_fee' => $chama['monthly_fee'], 'monthly_dues' => $chama['monthly_dues'] ?? 0]]);
         flash_success('Chama updated successfully.');
         header('Location: ' . url('chamas/index.php'));
         exit;
@@ -118,6 +124,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-text">Blank + a fee = starts a new month. Blank + no fee = never expires.</div></div>
             <div class="col-md-3"><label class="form-label">Billing phone (M-Pesa)</label><input class="form-control" name="billing_phone" value="<?= e($chama['billing_phone'] ?? '') ?>"></div>
             <div class="col-md-3"><label class="form-label">Started On</label><input type="date" class="form-control" name="started_at" value="<?= e($chama['started_at'] ?? '') ?>"></div>
+            <div class="col-12"><hr class="my-1"><h6 class="text-muted mb-1"><i class="fa-solid fa-comment-sms me-1"></i>SMS settings</h6>
+                <div class="text-muted small mb-2">Reminders need <code>cron/reminders.php</code> running daily (or open it in the browser with your token). Receipts go out automatically when money lands.</div></div>
+            <div class="col-md-3"><label class="form-label">Monthly dues reminders</label>
+                <select class="form-select" name="sms_enabled">
+                    <option value="0" <?= (int)($chama['sms_enabled'] ?? 0) === 0 ? 'selected' : '' ?>>Off</option>
+                    <option value="1" <?= (int)($chama['sms_enabled'] ?? 0) === 1 ? 'selected' : '' ?>>On</option>
+                </select></div>
+            <div class="col-md-3"><label class="form-label">Reminder day of month</label><input type="number" min="1" max="28" class="form-control" name="sms_reminder_day" value="<?= e($chama['sms_reminder_day'] ?? 5) ?>">
+                <div class="form-text">1-28. One SMS per member per month.</div></div>
+            <div class="col-md-3"><label class="form-label">Payment receipt SMS</label>
+                <select class="form-select" name="sms_receipts">
+                    <option value="1" <?= (int)($chama['sms_receipts'] ?? 1) === 1 ? 'selected' : '' ?>>Send on every payment</option>
+                    <option value="0" <?= (int)($chama['sms_receipts'] ?? 1) === 0 ? 'selected' : '' ?>>Off</option>
+                </select></div>
             <div class="col-md-6"><label class="form-label">Notes</label><input class="form-control" name="notes" value="<?= e($chama['notes']) ?>"></div>
             <div class="col-12 d-flex gap-2">
                 <button class="btn btn-primary" type="submit">Save Changes</button>

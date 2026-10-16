@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Record Contribution';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 $stmt = $pdo->prepare("SELECT id, member_no, full_name FROM members WHERE chama_id = ? AND status='active' ORDER BY full_name");
@@ -34,6 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $stmt = $pdo->prepare('INSERT INTO contributions (chama_id, member_id, amount, contribution_date, type, reference, notes) VALUES (?,?,?,?,?,?,?)');
             $stmt->execute([$chamaId, $member_id, $amount, $date, $type, $reference, $notes]);
+            $newId = (int)$pdo->lastInsertId();
+            $mst = $pdo->prepare('SELECT * FROM members WHERE id = ?'); $mst->execute([$member_id]); $mrec = $mst->fetch() ?: [];
+            $cst = $pdo->prepare('SELECT * FROM chamas WHERE id = ?'); $cst->execute([$chamaId]); $crec = $cst->fetch() ?: [];
+            audit_log('contribution.add', 'contribution', $newId, sprintf('Recorded %s contribution of KSh %s from %s', $type, number_format($amount, 2), $mrec['full_name'] ?? ('member #' . $member_id)), ['reference' => $reference, 'date' => $date]);
+            sms_payment_receipt($crec, $mrec, (string)($mrec['phone'] ?? ''), $type . ' contribution', (float)$amount, $reference !== '' ? $reference : 'RCPT' . $newId);
             flash_success('Contribution recorded successfully.');
             header('Location: ' . url('contributions/index.php')); exit;
         }

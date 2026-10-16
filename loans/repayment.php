@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Loan Repayment';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 $id = (int)($_GET['id'] ?? 0);
@@ -33,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare('UPDATE loans SET balance=?, status=? WHERE id=?');
         $stmt->execute([$newBalance, $newStatus, $id]);
         $pdo->commit();
+        audit_log('loan.repay', 'loan', $id, sprintf('Recorded manual repayment of KSh %s; balance now KSh %s', number_format($amount, 2), number_format($newBalance, 2)), ['reference' => $reference]);
         flash_success('Loan repayment recorded successfully.');
         header('Location: ' . url('loans/index.php')); exit;
     } else { flash_error('Enter an amount greater than zero and not more than the balance.'); }

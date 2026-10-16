@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 
 $id = (int)($_GET['id'] ?? 0);
@@ -24,6 +26,7 @@ try {
     if ($action === 'approve') {
         $update = $pdo->prepare("UPDATE loans SET status = 'approved', approved_date = ? WHERE id = ?");
         $update->execute([date('Y-m-d'), $id]);
+        audit_log('loan.approve', 'loan', $id, sprintf('Approved loan of KSh %s for %s', number_format((float)$loan['amount'], 2), $loan['full_name'] ?? 'member'));
         flash_success('Loan approved successfully.');
     } else {
         $update = $pdo->prepare("UPDATE loans SET status = 'rejected', approved_date = NULL WHERE id = ?");

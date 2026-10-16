@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Edit Member';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -24,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare('UPDATE members SET member_no=?, full_name=?, phone=?, email=?, address=?, join_date=?, status=? WHERE id=?');
     try {
         $stmt->execute([trim($_POST['member_no']), trim($_POST['full_name']), trim($_POST['phone']), trim($_POST['email']), trim($_POST['address']), $_POST['join_date'], $_POST['status'], $id]);
+        audit_log('member.update', 'member', $id, sprintf('Updated member %s (%s), status %s', trim($_POST['full_name']), trim($_POST['member_no']), $_POST['status']), ['before' => ['status' => $member['status'], 'phone' => $member['phone']]]);
         flash_success('Member updated successfully.');
         header('Location: ' . url('members/index.php')); exit;
     } catch (PDOException $e) { flash_error('Could not update member.'); }

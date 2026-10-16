@@ -42,6 +42,31 @@ function money($amount): string
     return 'KES ' . number_format((float)$amount, 2);
 }
 
+if (!function_exists('str_cut')) {
+    /**
+     * Multibyte-safe truncation that also works when PHP was built without
+     * the mbstring extension (some minimal Linux packages; XAMPP always has it).
+     */
+    function str_cut($value, int $length): string
+    {
+        $value = (string)$value;
+        if (function_exists('mb_substr')) {
+            return mb_substr($value, 0, $length);
+        }
+        if (strlen($value) <= $length) {
+            return $value;
+        }
+        $cut = substr($value, 0, $length);
+        while ($cut !== '' && (ord(substr($cut, -1)) & 0xC0) === 0x80) {
+            $cut = substr($cut, 0, -1);          // drop split continuation bytes
+        }
+        if ($cut !== '' && ord(substr($cut, -1)) >= 0x80) {
+            $cut = substr($cut, 0, -1);          // drop the now-dangling lead byte
+        }
+        return $cut;
+    }
+}
+
 function e($value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/includes/audit.php';
 if (is_logged_in()) {
     header('Location: ' . url('dashboard.php'));
     exit;
@@ -58,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'chama_id' => $chamaId,
                     'chama_name' => $chamaName,
                 ];
+                audit_log('auth.login', 'user', (int)$user['id'], sprintf('%s logged in (%s)', $user['name'], $user['role']));
                 header('Location: ' . url($redirectTo));
                 exit;
             }

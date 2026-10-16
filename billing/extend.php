@@ -5,6 +5,8 @@
  * Superadmin only.
  */
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['superadmin']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -40,6 +42,7 @@ $stmt->execute([
     (int)(current_user()['id'] ?? 0) ?: null,
 ]);
 
+audit_log('billing.extend', 'subscription', $chamaId, sprintf('%s: granted %d free day(s); new expiry %s', $chama['name'], $days, date('d M Y', strtotime((string)$newExpiry))), ['reason' => $reason]);
 flash_success($chama['name'] . ' extended by ' . $days . ' day' . ($days === 1 ? '' : 's') . '. New expiry: ' . date('d M Y', strtotime((string)$newExpiry)) . '.');
 header('Location: ' . url('billing/index.php'));
 exit;

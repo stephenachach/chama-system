@@ -199,9 +199,74 @@ function migrate_billing_schema(PDO $pdo): void
     }
 }
 
+// ---------------------------------------------------------------------------
+// Phase 3: SMS messaging, PDF statements support and the audit log.
+// ---------------------------------------------------------------------------
+function migrate_phase3_schema(PDO $pdo): void
+{
+    if (!column_exists($pdo, 'chamas', 'id')) {
+        return;
+    }
+
+    if (!column_exists($pdo, 'chamas', 'sms_enabled')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN sms_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER monthly_dues");
+    }
+    if (!column_exists($pdo, 'chamas', 'sms_receipts')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN sms_receipts TINYINT(1) NOT NULL DEFAULT 1 AFTER sms_enabled");
+    }
+    if (!column_exists($pdo, 'chamas', 'sms_reminder_day')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN sms_reminder_day TINYINT UNSIGNED NOT NULL DEFAULT 5 AFTER sms_receipts");
+    }
+    if (!column_exists($pdo, 'chamas', 'sms_last_reminder')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN sms_last_reminder DATE NULL AFTER sms_reminder_day");
+    }
+
+    if (!column_exists($pdo, 'sms_logs', 'id')) {
+        $pdo->exec("CREATE TABLE sms_logs (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            chama_id INT UNSIGNED NULL,
+            member_id INT UNSIGNED NULL,
+            phone VARCHAR(30) NOT NULL DEFAULT '',
+            purpose ENUM('receipt','reminder','broadcast','loan','notice') NOT NULL DEFAULT 'notice',
+            message VARCHAR(480) NOT NULL DEFAULT '',
+            provider VARCHAR(40) NOT NULL DEFAULT 'simulation',
+            status ENUM('queued','sent','simulated','failed') NOT NULL DEFAULT 'queued',
+            provider_message_id VARCHAR(120) NULL,
+            error VARCHAR(255) NOT NULL DEFAULT '',
+            created_by INT UNSIGNED NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_smslog_chama (chama_id),
+            KEY idx_smslog_member (member_id),
+            KEY idx_smslog_purpose (purpose, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    if (!column_exists($pdo, 'audit_logs', 'id')) {
+        $pdo->exec("CREATE TABLE audit_logs (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            chama_id INT UNSIGNED NULL,
+            user_id INT UNSIGNED NULL,
+            actor VARCHAR(150) NOT NULL DEFAULT '',
+            action VARCHAR(80) NOT NULL DEFAULT '',
+            entity_type VARCHAR(40) NOT NULL DEFAULT '',
+            entity_id INT UNSIGNED NULL,
+            description VARCHAR(480) NOT NULL DEFAULT '',
+            meta TEXT NULL,
+            ip_address VARCHAR(45) NOT NULL DEFAULT '',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_audit_chama (chama_id, created_at),
+            KEY idx_audit_action (action),
+            KEY idx_audit_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+}
+
 try {
     migrate_schema($pdo);
     migrate_billing_schema($pdo);
+    migrate_phase3_schema($pdo);
 } catch (Throwable $ignored) {
     // When the core tables have not been imported yet, skip migration;
     // importing database.sql creates everything in the correct shape.

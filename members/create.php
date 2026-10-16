@@ -1,6 +1,8 @@
 <?php
 $page_title = 'Add Member';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/audit.php';
+require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
 require_once __DIR__ . '/../includes/header.php';
 
@@ -35,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $stmt = $pdo->prepare('INSERT INTO members (chama_id, member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?,?)');
                 $stmt->execute([$chamaId, $member_no, $full_name, $phone, $email, $address, $join_date, $status]);
+                audit_log('member.add', 'member', (int)$pdo->lastInsertId(), sprintf('Added member %s (%s)', $full_name, $member_no), ['phone' => $phone]);
                 flash_success('Member added successfully.');
                 header('Location: ' . url('members/index.php'));
                 exit;
