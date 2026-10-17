@@ -242,6 +242,19 @@ function migrate_phase3_schema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
+    if (!column_exists($pdo, 'chamas', 'is_pilot')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN is_pilot TINYINT(1) NOT NULL DEFAULT 0 AFTER sms_last_reminder");
+    }
+    if (!column_exists($pdo, 'chamas', 'tier')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN tier VARCHAR(20) NOT NULL DEFAULT 'standard' AFTER is_pilot");
+    }
+    if (!column_exists($pdo, 'chamas', 'setup_fee')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN setup_fee DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER tier");
+    }
+    if (!column_exists($pdo, 'chamas', 'setup_fee_paid')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN setup_fee_paid TINYINT(1) NOT NULL DEFAULT 0 AFTER setup_fee");
+    }
+
     if (!column_exists($pdo, 'audit_logs', 'id')) {
         $pdo->exec("CREATE TABLE audit_logs (
             id INT UNSIGNED NOT NULL AUTO_INCREMENT,

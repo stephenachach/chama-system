@@ -153,7 +153,8 @@ $pending = $pendingStmt->fetchAll();
                     <td><?= e($c['last_paid_at'] ? date('d M Y', strtotime((string)$c['last_paid_at'])) : '-') ?></td>
                     <td><?= money($c['lifetime_paid']) ?></td>
                     <td>
-                        <a class="btn btn-sm btn-success" href="<?= url('billing/pay.php?chama_id=' . (int)$c['id']) ?>">Bill M-Pesa</a>
+                        <a href="<?= url('billing/pilots.php') ?>" class="btn btn-outline-warning"><i class="fa-solid fa-rocket me-1"></i>Pilot pipeline</a>
+                <a class="btn btn-sm btn-success" href="<?= url('billing/pay.php?chama_id=' . (int)$c['id']) ?>">Bill M-Pesa</a>
                         <form method="post" action="<?= url('billing/mark_paid.php') ?>" class="d-inline">
                             <input type="hidden" name="chama_id" value="<?= (int)$c['id'] ?>">
                             <button class="btn btn-sm btn-outline-primary" onclick="return confirm('Record <?= e($c['name']) ?> as paid by cash/bank for 1 month?')">Mark paid</button>

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/includes/plans.php';
 require_once __DIR__ . '/includes/audit.php';
 if (is_logged_in()) {
     header('Location: ' . url('dashboard.php'));
@@ -105,7 +106,11 @@ $page_title = 'Login';
                 </form>
                 <div class="mt-4 text-center text-muted small">
                     New here? <a href="<?= url('register.php') ?>">Register as a member</a>
-                </div>
+                
+        <div class="text-center mt-3 small">
+            New here? <a href="<?= url('index.php') ?>#pricing">See plans &amp; pricing</a> or
+            <a href="<?= url('start.php') ?>" class="fw-semibold">start a free <?= PILOT_DAYS ?>-day pilot</a>.
+        </div></div>
             </div>
         </div>
         <div class="col-lg-6">

@@ -102,6 +102,32 @@ Plan created ──► active (days left shown everywhere)
 - A payment extends from the current expiry when the plan is still valid (pre-paying
   stacks months) or from today when it has already lapsed.
 
+## Phase 4: selling it - landing page, pricing and the pilot pipeline
+
+The public face of the product:
+
+- **`index.php`** (logged out) is now a landing page: feature grid, three
+  pricing tiers and a "start free pilot" call to action. Logged in, it still
+  goes straight to the dashboard.
+- **`start.php`** - one public form, and a group leader gets a working chama:
+  the group, their admin login and a free **90-day pilot** (`PILOT_DAYS` in
+  `includes/plans.php`). When the window ends, the ordinary subscription
+  machinery takes over (expiry -> suspend -> renew by M-Pesa), so pilots
+  convert themselves. A honeypot field and email checks keep spam out.
+- **`billing/pilots.php`** (platform operator) - the sales pipeline: every
+  pilot, its contact, tier, days left, and the one-off **setup fee** with a
+  Paid/Due badge. One-click actions: mark fee paid, +30 days, "Bill now"
+  (ends the pilot today), "Customer" (converted). All actions are audited.
+- **`includes/plans.php`** - the single source of truth for tiers
+  (Standard KSh 5,000 setup + 500/mo, Growth 7,500 + 1,000/mo,
+  Premium 10,000 + 1,500/mo). Change prices here and the landing page, the
+  signup form and the pipeline all follow.
+
+Suggested pilot workflow: client fills `start.php` on your site (or you fill
+it together on a call) -> they use the system free for 90 days -> you collect
+the setup fee at onboarding and mark it paid in the pipeline -> at day 90 the
+group renews by M-Pesa like any customer, or you extend/convert them.
+
 ## Phase 3: SMS, PDF statements and the audit log
 
 **SMS (free until you go live).** Every message is written to `sms_logs` and
@@ -240,6 +266,10 @@ screen polls `mpesa/status.php`, which asks Daraja directly for the result.
 | `includes/sms.php` | SMS engine: simulation by default, Africa's Talking when configured |
 | `cron/reminders.php` | Monthly dues reminder job (one SMS per unpaid member per month) |
 | `audit/index.php`, `includes/audit.php` | Append-only audit trail and its viewer |
+| `index.php` (logged out) | Public landing page: features, pricing, pilot CTA |
+| `start.php` | Public pilot signup: creates chama + admin + 90-day window |
+| `billing/pilots.php` | Pilot pipeline: setup fees, extensions, conversions |
+| `includes/plans.php` | Pricing tiers + pilot rules (single source of truth) |
 | `account/subscription.php` | A chama's own plan, expiry, M-Pesa payment and history |
 | `cron/subscriptions.php` | Optional scheduled enforcement + report |
 | `storage/` | OAuth token cache and maintenance lock (writable, git-ignored) |
