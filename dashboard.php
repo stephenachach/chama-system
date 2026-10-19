@@ -75,7 +75,8 @@ if (is_superadmin()) {
                             <?php if ($c['status'] !== 'active'): ?><span class="badge bg-danger ms-1">Suspended</span><?php endif; ?></td>
                         <td>
                             <a class="btn btn-sm btn-success" href="<?= url('billing/pay.php?chama_id=' . (int)$c['id']) ?>">Bill M-Pesa</a>
-                            <form method="post" action="<?= url('billing/extend.php') ?>" class="d-inline">
+                            <form method="post" action="<?= url('billing/extend.php') ?>
+            <?= csrf_field() ?>" class="d-inline">
                                 <input type="hidden" name="chama_id" value="<?= (int)$c['id'] ?>">
                                 <input type="hidden" name="days" value="30">
                                 <button class="btn btn-sm btn-outline-secondary" title="Grant 30 days">+30d</button>

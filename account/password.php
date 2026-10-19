@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card-header">Change Password</div>
     <div class="card-body">
         <form method="post" class="row g-3">
+            <?= csrf_field() ?>
             <div class="col-12">
                 <label class="form-label required">Current Password</label>
                 <input type="password" class="form-control" name="current_password" required>

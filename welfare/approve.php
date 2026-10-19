@@ -37,5 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: ' . url('welfare/index.php')); exit;
 }
 ?>
-<div class="card shadow-sm mx-auto" style="max-width: 650px;"><div class="card-header">Approve / Reject Welfare Request</div><div class="card-body"><p><strong>Member:</strong> <?= e($welfare['member_no'].' - '.$welfare['full_name']) ?></p><p><strong>Amount:</strong> <?= money($welfare['amount']) ?></p><p><strong>Reason:</strong> <?= e($welfare['reason']) ?></p><form method="post"><button class="btn btn-success" name="action" value="approve">Approve</button> <button class="btn btn-danger" name="action" value="reject">Reject</button> <a class="btn btn-secondary" href="<?= url('welfare/index.php') ?>">Cancel</a></form></div></div>
+<div class="card shadow-sm mx-auto" style="max-width: 650px;"><div class="card-header">Approve / Reject Welfare Request</div><div class="card-body"><p><strong>Member:</strong> <?= e($welfare['member_no'].' - '.$welfare['full_name']) ?></p><p><strong>Amount:</strong> <?= money($welfare['amount']) ?></p><p><strong>Reason:</strong> <?= e($welfare['reason']) ?></p><form method="post">
+            <?= csrf_field() ?><button class="btn btn-success" name="action" value="approve">Approve</button> <button class="btn btn-danger" name="action" value="reject">Reject</button> <a class="btn btn-secondary" href="<?= url('welfare/index.php') ?>">Cancel</a></form></div></div>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

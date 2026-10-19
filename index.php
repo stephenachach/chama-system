@@ -117,7 +117,7 @@ $page_title = 'Welcome';
 
     <div class="text-center mb-4" id="pricing">
         <h2 class="fw-bold text-white">Simple pricing, per chama</h2>
-        <p class="text-white-50">One setup fee when we onboard you, then one monthly subscription.
+        <p class="text-white-50">No setup fee - one monthly subscription per group, paid by the group (never by members).
             Every plan starts with <strong class="text-white"><?= PILOT_DAYS ?> days free</strong> - no card, no contract.</p>
     </div>
 
@@ -130,7 +130,7 @@ $page_title = 'Welcome';
                     <h4 class="fw-bold mb-1"><?= e($t['label']) ?></h4>
                     <div class="text-muted small mb-3"><?= e($t['blurb']) ?></div>
                     <div class="mb-1"><span class="display-6 fw-bold">KSh <?= number_format($t['monthly'], 0) ?></span><span class="text-muted">/month</span></div>
-                    <div class="text-muted small mb-3">+ KSh <?= number_format($t['setup'], 0) ?> one-off setup &amp; training</div>
+                    <div class="text-muted small mb-3"><?= $t['setup'] > 0 ? '+ KSh ' . number_format($t['setup'], 0) . ' one-off setup &amp; training' : 'Assisted setup &amp; data import optional - quoted separately' ?></div>
                     <div class="badge bg-light text-dark border mb-3 align-self-start"><?= e($t['members']) ?></div>
                     <ul class="list-unstyled small mb-4">
                         <?php foreach ($t['features'] as $f): ?>
@@ -179,6 +179,7 @@ $page_title = 'Welcome';
         &copy; <?= date('Y') ?> <?= e(APP_NAME) ?> - built for chamas, table-banking groups and welfare societies in Kenya.
         <span class="mx-1 opacity-50">|</span> <a href="<?= url('login.php') ?>" class="link-light">Login</a>
         <span class="mx-1 opacity-50">|</span> <a href="<?= url('register.php') ?>" class="link-light">Join your chama</a>
+        <span class="mx-1 opacity-50">|</span> <a href="<?= url('privacy.php') ?>" class="link-light">Privacy &amp; security</a>
     </p>
 </div>
 </body>

@@ -34,7 +34,7 @@ $users = $stmt->fetchAll();
                     <td><?= e($u['created_at']) ?></td>
                     <td>
                         <?php if ($u['role'] === 'member' && $status === 'approved'): ?>
-                            <a class="btn btn-sm btn-warning" onclick="return confirm('Promote this member to treasurer?')" href="<?= url('users/promote.php?id=' . $u['id']) ?>">Promote</a>
+                            <form method="post" action="<?= url('users/promote.php') ?>" class="d-inline" onsubmit="return confirm('Promote this member to treasurer?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$u['id'] ?>"><button class="btn btn-sm btn-warning">Promote</button></form>
                         <?php else: ?>
                             <span class="text-muted small">-</span>
                         <?php endif; ?>

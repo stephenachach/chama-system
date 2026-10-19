@@ -41,7 +41,12 @@ CREATE TABLE chamas (
     sms_receipts TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'send confirmation SMS when money lands',
     sms_reminder_day TINYINT UNSIGNED NOT NULL DEFAULT 5 COMMENT 'day of month for the reminder, 1-28',
     sms_last_reminder DATE NULL COMMENT 'last day a reminder batch was sent',
-    is_pilot TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'on a free pilot window',
+    pay_shortcode VARCHAR(20) NOT NULL DEFAULT '' COMMENT 'group OWN Paybill/Till for member money',
+    pay_passkey VARCHAR(120) NOT NULL DEFAULT '' COMMENT 'Daraja passkey for the group shortcode',
+    pay_verified TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'operator confirmed route ownership',
+    pay_verified_at DATETIME NULL,
+    sms_balance INT NOT NULL DEFAULT 0 COMMENT 'prepaid SMS units',
+    is_pilot TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'on a free trial window',
     tier VARCHAR(20) NOT NULL DEFAULT 'standard' COMMENT 'pricing tier key',
     setup_fee DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT 'one-off onboarding fee quoted',
     setup_fee_paid TINYINT(1) NOT NULL DEFAULT 0,
@@ -175,6 +180,7 @@ CREATE TABLE mpesa_payments (
     status ENUM('pending','paid','failed','cancelled') NOT NULL DEFAULT 'pending',
     checkout_request_id VARCHAR(120) NULL,
     merchant_request_id VARCHAR(120) NULL,
+    shortcode_used VARCHAR(20) NOT NULL DEFAULT '' COMMENT 'which shortcode collected this money',
     mpesa_receipt VARCHAR(50) NULL,
     result_record_id INT UNSIGNED NULL,
     notes VARCHAR(255) NOT NULL DEFAULT '',
@@ -242,10 +248,43 @@ CREATE TABLE audit_logs (
     KEY idx_audit_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE plans (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    plan_key VARCHAR(30) NOT NULL,
+    label VARCHAR(80) NOT NULL DEFAULT '',
+    monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
+    max_members INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0 = unlimited',
+    annual_months_pay TINYINT UNSIGNED NOT NULL DEFAULT 10 COMMENT 'pay N months for 12',
+    sort INT NOT NULL DEFAULT 0,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    description VARCHAR(255) NOT NULL DEFAULT '',
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_plans_key (plan_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE login_attempts (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    email VARCHAR(150) NOT NULL DEFAULT '',
+    ip_address VARCHAR(45) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_login_email (email, created_at),
+    KEY idx_login_ip (ip_address, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Seed: the default chama (existing single-group data lands here on upgrade)
 INSERT INTO chamas (id, name, slug) VALUES (1, 'Default Chama', 'default-chama');
+
+-- Seed: launch pricing HYPOTHESES (edit in Billing > Plans, not here)
+INSERT INTO plans (plan_key, label, monthly, max_members, sort, description) VALUES
+    ('micro',        'Micro - 8 to 10 active members',   150,  10, 1, 'Small table-banking and merry-go-round groups'),
+    ('small',        'Small - 10 to 15 active members',  250,  15, 2, 'Growing savings groups'),
+    ('community',    'Community - up to 20 members',     500,  20, 3, 'Established chamas with monthly meetings'),
+    ('growth',       'Growth - up to 100 members',      1200, 100, 4, 'Large chamas with real float'),
+    ('welfare_plus', 'Welfare Plus - up to 250 members', 2500, 250, 5, 'Welfare societies and alumni groups'),
+    ('enterprise',   'Large organisation - quoted',     3500,   0, 6, 'From KSh 3,500/month, quoted by requirements');
 
 -- Seed: platform operator account (initial password: Chama@2026)
 INSERT INTO users (chama_id, member_id, name, email, password, role, account_status)

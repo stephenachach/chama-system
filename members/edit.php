@@ -1,6 +1,7 @@
 <?php
 $page_title = 'Edit Member';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/plans.php';
 require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
@@ -23,6 +24,14 @@ $member = $stmt->fetch();
 if (!$member) { flash_error('Member not found.'); header('Location: ' . url('members/index.php')); exit; }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (($_POST['status'] ?? '') === 'active' && ($member['status'] ?? '') !== 'active') {
+        $slot = plan_member_slot_available(current_chama() ?: []);
+        if (!$slot['ok']) {
+            flash_error($slot['message']);
+            header('Location: ' . url('members/edit.php?id=' . $id));
+            exit;
+        }
+    }
     $stmt = $pdo->prepare('UPDATE members SET member_no=?, full_name=?, phone=?, email=?, address=?, join_date=?, status=? WHERE id=?');
     try {
         $stmt->execute([trim($_POST['member_no']), trim($_POST['full_name']), trim($_POST['phone']), trim($_POST['email']), trim($_POST['address']), $_POST['join_date'], $_POST['status'], $id]);
@@ -36,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card-header">Edit Member</div>
     <div class="card-body">
         <form method="post" class="row g-3">
+            <?= csrf_field() ?>
             <div class="col-md-4"><label class="form-label required">Member No</label><input class="form-control" name="member_no" value="<?= e($member['member_no']) ?>" required></div>
             <div class="col-md-8"><label class="form-label required">Full Name</label><input class="form-control" name="full_name" value="<?= e($member['full_name']) ?>" required></div>
             <div class="col-md-6"><label class="form-label">Phone</label><input class="form-control" name="phone" value="<?= e($member['phone']) ?>"></div>

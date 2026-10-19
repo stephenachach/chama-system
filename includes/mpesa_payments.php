@@ -46,6 +46,27 @@ function mpesa_pay_initiate(array $opts): array
         return $fail('The amount must be at least KES 1.');
     }
 
+    // --- Fund-safety gate (P0): group collections must settle to the GROUP's
+    // own verified M-Pesa route, never to the platform shortcode. In demo
+    // (simulation) mode everything is allowed and clearly labelled.
+    $stmt = $pdo->prepare('SELECT * FROM chamas WHERE id = ? LIMIT 1');
+    $stmt->execute([$chamaId]);
+    $chamaRow = $stmt->fetch();
+    if (!$chamaRow) {
+        return $fail('Group not found.');
+    }
+    $routeStatus = mpesa_group_route_status($chamaRow);
+    $route = [];
+    if (in_array($routeStatus['state'], ['setup_required', 'unverified'], true)) {
+        return [
+            'ok' => false, 'payment_id' => 0, 'checkout_id' => '', 'simulated' => false,
+            'error' => $routeStatus['message'], 'code' => $routeStatus['state'],
+        ];
+    }
+    if ($routeStatus['state'] === 'ready') {
+        $route = $routeStatus['route'];
+    }
+
     // --- Contribution -------------------------------------------------------
     if ($purpose === 'contribution') {
         $stmt = $pdo->prepare('SELECT id, member_no, full_name FROM members WHERE id = ? AND chama_id = ? LIMIT 1');
@@ -85,16 +106,17 @@ function mpesa_pay_initiate(array $opts): array
         $label = 'loan repayment for ' . $loan['full_name'];
     }
 
-    $result = mpesa_stk_push($phone, $amount, $accountRef, $description);
+    $result = mpesa_stk_push($phone, $amount, $accountRef, $description, $route);
     if (!$result['ok']) {
         return $fail($result['error']);
     }
+    $shortcodeUsed = $routeStatus['state'] === 'simulation' ? 'SIMULATION' : ($route['shortcode'] ?? '');
 
     $stmt = $pdo->prepare(
         "INSERT INTO mpesa_payments
             (chama_id, purpose, member_id, loan_id, amount, phone, status,
-             checkout_request_id, merchant_request_id, initiated_by, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, NOW())"
+             checkout_request_id, merchant_request_id, initiated_by, shortcode_used, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, NOW())"
     );
     $stmt->execute([
         $chamaId,
@@ -106,6 +128,7 @@ function mpesa_pay_initiate(array $opts): array
         (string)$result['checkout_request_id'],
         $result['merchant_request_id'] ?? null,
         $initiatedBy,
+        $shortcodeUsed,
     ]);
 
     return [

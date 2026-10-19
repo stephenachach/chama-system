@@ -88,6 +88,15 @@ $payments = $history->fetchAll();
 </div>
 <?php endif; ?>
 
+<div class="card shadow-sm mb-4">
+    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+        <div>
+            <h5 class="mb-1"><i class="fa-solid fa-route me-2"></i>Where your members' money lands</h5>
+            <div class="text-muted small">Set your group's own Paybill/Till so live M-Pesa collections settle to YOU - never to the platform.</div>
+        </div>
+        <a href="<?= url('account/payment_route.php') ?>" class="btn btn-outline-primary text-nowrap">M-Pesa collection route</a>
+    </div>
+</div>
 <div class="row g-4">
     <div class="col-lg-5">
         <div class="card shadow-sm h-100">
@@ -133,6 +142,7 @@ $payments = $history->fetchAll();
                     <p class="text-muted mb-0">No monthly fee is set for this group. Ask the platform operator to set one.</p>
                 <?php else: ?>
                 <form method="post" class="row g-3 align-items-end">
+            <?= csrf_field() ?>
                     <input type="hidden" name="action" value="pay">
                     <div class="col-md-6">
                         <label class="form-label required">M-Pesa phone number</label>
@@ -165,6 +175,7 @@ $payments = $history->fetchAll();
                 <div id="pendingState" class="alert alert-secondary py-2 mb-3">Checking with M-Pesa&hellip;</div>
                 <?php if ($simulating): ?>
                 <form method="post" class="d-inline">
+            <?= csrf_field() ?>
                     <input type="hidden" name="action" value="complete_sim">
                     <input type="hidden" name="payment_id" value="<?= (int)$pending['id'] ?>">
                     <button class="btn btn-outline-success">Simulate: customer accepted &amp; paid</button>

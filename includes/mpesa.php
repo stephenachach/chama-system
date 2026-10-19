@@ -170,19 +170,79 @@ function mpesa_access_token(bool $forceRefresh = false): array
 // ---------------------------------------------------------------------------
 // STK Push
 // ---------------------------------------------------------------------------
-function mpesa_stk_payload(string $phone, float $amount, string $accountRef, string $description): array
+/**
+ * Which M-Pesa mode are we in?
+ *   simulation - no Daraja credentials: nothing real happens, clearly labelled
+ *   sandbox    - Safaricom test environment: test money only
+ *   production - real money
+ */
+function mpesa_mode(): string
 {
+    if (mpesa_is_simulation()) {
+        return 'simulation';
+    }
+    return MPESA_ENV === 'production' ? 'production' : 'sandbox';
+}
+
+/**
+ * A group's OWN collection route (their Paybill/Till + passkey).
+ * Group money must settle to the group's account, never to the platform's.
+ */
+function mpesa_chama_route(int $chamaId): ?array
+{
+    global $pdo;
+    $stmt = $pdo->prepare('SELECT pay_shortcode, pay_passkey, pay_verified, pay_verified_at FROM chamas WHERE id = ? LIMIT 1');
+    $stmt->execute([$chamaId]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+/**
+ * May this group receive live STK collections?
+ *   simulation     - demo mode: allowed, clearly labelled, no money moves
+ *   ready          - verified group route configured: live STK to THEIR account
+ *   setup_required - no route: refuse live STK, fall back to manual recording
+ *   unverified     - route entered but not yet ownership-verified by the operator
+ */
+function mpesa_group_route_status(array $chama): array
+{
+    if (mpesa_is_simulation()) {
+        return ['state' => 'simulation', 'route' => [], 'message' => 'Demo mode: no real money moves.'];
+    }
+    $route = mpesa_chama_route((int)($chama['id'] ?? 0));
+    $shortcode = trim((string)($route['pay_shortcode'] ?? ''));
+    $passkey = trim((string)($route['pay_passkey'] ?? ''));
+    if ($shortcode === '' || $passkey === '') {
+        return [
+            'state' => 'setup_required',
+            'route' => [],
+            'message' => 'Live M-Pesa collection is not enabled for this group yet (no Paybill/Till route configured). Record payments manually, or set the group route under Account > M-Pesa collection route.',
+        ];
+    }
+    if ((int)($route['pay_verified'] ?? 0) !== 1) {
+        return [
+            'state' => 'unverified',
+            'route' => [],
+            'message' => 'This group’s M-Pesa route is waiting for ownership verification by the platform operator. Record payments manually meanwhile.',
+        ];
+    }
+    return ['state' => 'ready', 'route' => ['shortcode' => $shortcode, 'passkey' => $passkey], 'message' => ''];
+}
+
+function mpesa_stk_payload(string $phone, float $amount, string $accountRef, string $description, array $route = []): array
+{
+    $route = array_merge(['shortcode' => MPESA_SHORTCODE, 'passkey' => MPESA_PASSKEY], $route);
     $timestamp = date('YmdHis');
-    $password = base64_encode(MPESA_SHORTCODE . MPESA_PASSKEY . $timestamp);
+    $password = base64_encode($route['shortcode'] . $route['passkey'] . $timestamp);
 
     return [
-        'BusinessShortCode' => MPESA_SHORTCODE,
+        'BusinessShortCode' => $route['shortcode'],
         'Password' => $password,
         'Timestamp' => $timestamp,
         'TransactionType' => MPESA_TRANSACTION_TYPE,
         'Amount' => (string)max(1, (int)round($amount)),
         'PartyA' => $phone,
-        'PartyB' => MPESA_SHORTCODE,
+        'PartyB' => $route['shortcode'],
         'PhoneNumber' => $phone,
         'CallBackURL' => mpesa_callback_url(),
         'AccountReference' => $accountRef !== '' ? $accountRef : 'CHAMA',
@@ -197,7 +257,7 @@ function mpesa_stk_payload(string $phone, float $amount, string $accountRef, str
  *   simulated           - true when no credentials are configured
  *   error               - human readable failure reason
  */
-function mpesa_stk_push(string $phone, float $amount, string $accountRef, string $description): array
+function mpesa_stk_push(string $phone, float $amount, string $accountRef, string $description, array $route = []): array
 {
     $phone = mpesa_normalize_phone($phone);
     if ($phone === '') {
@@ -228,7 +288,7 @@ function mpesa_stk_push(string $phone, float $amount, string $accountRef, string
         return ['ok' => false, 'checkout_request_id' => '', 'simulated' => false, 'error' => $auth['error']];
     }
 
-    $payload = mpesa_stk_payload($phone, $amount, $accountRef, $description);
+    $payload = mpesa_stk_payload($phone, $amount, $accountRef, $description, $route);
     $res = mpesa_http_request(MPESA_STK_URL, $payload, $auth['token']);
     $json = $res['json'];
 

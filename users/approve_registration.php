@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/plans.php';
 require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
@@ -30,6 +31,15 @@ try {
     $chamaId = current_chama_id();
 
     if ($action === 'approve') {
+        $chamaRow = $pdo->prepare('SELECT * FROM chamas WHERE id = ? LIMIT 1');
+        $chamaRow->execute([$chamaId]);
+        $slot = plan_member_slot_available($chamaRow->fetch() ?: []);
+        if (!$slot['ok']) {
+            $pdo->rollBack();
+            flash_error($slot['message']);
+            header('Location: ' . url('users/approvals.php'));
+            exit;
+        }
         $stmt = $pdo->prepare("UPDATE users SET account_status = 'approved', role = 'member' WHERE id = ? AND chama_id = ?");
         $stmt->execute([$id, $chamaId]);
 

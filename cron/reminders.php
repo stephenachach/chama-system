@@ -1,4 +1,5 @@
 <?php
+define('CSRF_EXEMPT', true);   // public form / machine endpoint: CSRF handled per-flow
 /**
  * Monthly dues reminder job.
  *

@@ -111,6 +111,19 @@ if (!function_exists('sms_send')) {
             return ['ok' => true, 'status' => 'simulated', 'id' => $id, 'error' => ''];
         }
 
+        // Live SMS is a PREPAID add-on: never promised unlimited, always
+        // deducted from the group's credit balance before sending.
+        $parts = max(1, (int)ceil(strlen($message) / 160));
+        $chId = (int)($args['chama_id'] ?? 0);
+        if ($chId > 0) {
+            $st = $pdo->prepare('UPDATE chamas SET sms_balance = sms_balance - ? WHERE id = ? AND sms_balance >= ?');
+            $st->execute([$parts, $chId, $parts]);
+            if ($st->rowCount() === 0) {
+                $id = sms_log_entry($args, 'failed', $cfg['provider'], null, 'No SMS credit left for this group');
+                return ['ok' => false, 'status' => 'failed', 'id' => $id, 'error' => 'No SMS credit. Top up via the platform operator.'];
+            }
+        }
+
         // ---- Africa's Talking -------------------------------------------------
         $id = sms_log_entry($args, 'queued', 'africastalking', null, '');
         $payload = http_build_query([

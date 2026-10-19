@@ -1,6 +1,7 @@
 <?php
 $page_title = 'Bill Chama';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/plans.php';
 require_role(['superadmin']);
 require_once __DIR__ . '/../includes/header.php';
 
@@ -21,8 +22,18 @@ $simulating = mpesa_is_simulation();
 $userId = (int)$user['id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'pay') {
-    $months = max(1, min(12, (int)($_POST['months'] ?? 1)));
-    $result = initiate_subscription_stk($chama, (string)($_POST['phone'] ?? ''), $userId, $months);
+    // Annual billing hypothesis: 12 months of service for the price of
+    // annual_months_pay (default 10). Priced server-side, never from the form.
+    $plan = plan_for_chama($chama);
+    $amountOverride = null;
+    if (($_POST['period'] ?? 'monthly') === 'annual') {
+        $months = 12;
+        $base = (float)$chama['monthly_fee'] > 0 ? (float)$chama['monthly_fee'] : (float)$plan['monthly'];
+        $amountOverride = $base * (int)($plan['annual_months_pay'] ?: 10);
+    } else {
+        $months = max(1, min(12, (int)($_POST['months'] ?? 1)));
+    }
+    $result = initiate_subscription_stk($chama, (string)($_POST['phone'] ?? ''), $userId, $months, $amountOverride);
     if ($result['ok']) {
         flash_success($result['simulated']
             ? 'Simulated M-Pesa request created (demo mode - no Daraja credentials).'
@@ -36,6 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'pay')
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'complete_sim') {
+    // Demo control only: in sandbox/production a payment can be confirmed
+    // solely by Safaricom's callback / status query.
+    if (!mpesa_is_simulation()) {
+        http_response_code(403);
+        flash_error('Simulation is only available in demo mode. Live payments are confirmed by Safaricom.');
+        header('Location: ' . url('billing/pay.php'));
+        exit;
+    }
     $paymentId = (int)($_POST['payment_id'] ?? 0);
     $stmt = $pdo->prepare('SELECT * FROM subscription_payments WHERE id = ? AND chama_id = ? LIMIT 1');
     $stmt->execute([$paymentId, $chamaId]);
@@ -101,11 +120,19 @@ $payments = $history->fetchAll();
                         <a href="<?= url('chamas/edit.php?id=' . $chamaId) ?>">Set the fee</a> first.</div>
                 <?php endif; ?>
                 <form method="post" class="row g-3">
+            <?= csrf_field() ?>
                     <input type="hidden" name="action" value="pay">
                     <input type="hidden" name="chama_id" value="<?= $chamaId ?>">
                     <div class="col-12">
                         <label class="form-label required">Customer phone (M-Pesa)</label>
                         <input class="form-control" name="phone" value="<?= e($billingPhone) ?>" placeholder="0712 345 678" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Billing period</label>
+                        <select class="form-select" name="period" id="periodSel">
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="annual">Annual - 12 months for the price of <?= (int)(plan_for_chama($chama)['annual_months_pay'] ?: 10) ?></option>
+                        </select>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Months to cover</label>
@@ -136,6 +163,7 @@ $payments = $history->fetchAll();
                 <div id="pendingState" class="alert alert-secondary py-2 mb-3">Checking with M-Pesa&hellip;</div>
                 <?php if ($simulating): ?>
                 <form method="post" class="d-inline">
+            <?= csrf_field() ?>
                     <input type="hidden" name="action" value="complete_sim">
                     <input type="hidden" name="payment_id" value="<?= (int)$pending['id'] ?>">
                     <input type="hidden" name="chama_id" value="<?= $chamaId ?>">

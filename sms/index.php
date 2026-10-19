@@ -100,7 +100,8 @@ $defaultMsg = "Dear {first}, a friendly reminder that your {month} dues of KSh {
     </div>
 </div>
 <?php else: ?>
-<div class="alert alert-success"><i class="fa-solid fa-tower-broadcast me-2"></i>Live SMS via Africa's Talking<?= $cfg['sender_id'] !== '' ? ' (sender ID: ' . e($cfg['sender_id']) . ')' : '' ?>.</div>
+<div class="alert alert-success"><i class="fa-solid fa-tower-broadcast me-2"></i>Live SMS via Africa's Talking<?= $cfg['sender_id'] !== '' ? ' (sender ID: ' . e($cfg['sender_id']) . ')' : '' ?>.
+    Group credit: <strong><?= (int)($chama['sms_balance'] ?? 0) ?> unit(s)</strong> - SMS is prepaid (1 unit ~ one 160-character message); top-ups are arranged with the platform operator.</div>
 <?php endif; ?>
 
 <div class="row g-3">
@@ -109,6 +110,7 @@ $defaultMsg = "Dear {first}, a friendly reminder that your {month} dues of KSh {
             <div class="card-header">Compose</div>
             <div class="card-body">
                 <form method="post">
+            <?= csrf_field() ?>
                     <div class="mb-3">
                         <label class="form-label">Send to</label>
                         <select name="audience" id="audience" class="form-select">

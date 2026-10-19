@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card-header"><?= e($headerTitle) ?></div>
     <div class="card-body">
         <form method="post" class="row g-3">
+            <?= csrf_field() ?>
             <?php if ($isMember): ?>
                 <div class="col-12"><label class="form-label">Member</label><input class="form-control" type="text" value="<?= e($user['name']) ?>" readonly><input type="hidden" name="member_id" value="<?= e($user['member_id']) ?>"></div>
             <?php else: ?>

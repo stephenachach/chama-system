@@ -1,4 +1,5 @@
 <?php
+define('CSRF_EXEMPT', true);   // public form / machine endpoint: CSRF handled per-flow
 require_once __DIR__ . '/config/auth.php';
 require_once __DIR__ . '/includes/plans.php';
 require_once __DIR__ . '/includes/audit.php';
@@ -11,6 +12,15 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+
+    // Login throttling: 6 failures per 10 minutes per email+IP.
+    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE (email = ? OR ip_address = ?) AND created_at > (NOW() - INTERVAL 10 MINUTE)");
+    $stmt->execute([$email, $ip]);
+    if ((int)$stmt->fetchColumn() >= 6) {
+        $error = 'Too many failed attempts. Wait about 10 minutes and try again.';
+        $password = null;   // skip verification entirely
+    }
 
     $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
@@ -38,7 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // still log in to the billing page so they can pay and
                     // restore access themselves. Everyone else stays blocked.
                     $isBillingOfficer = in_array($user['role'], ['admin', 'treasurer'], true);
-                    if (($chama['suspension_reason'] ?? '') === 'nonpayment' && $isBillingOfficer) {
+                    if (($chama['suspension_reason'] ?? '') === 'nonpayment') {
+                        // Expired subscription: everyone keeps read-only access
+                        // to the group's history (never a lockout); managers
+                        // additionally get the billing page to renew.
+                        $chamaName = $chama['name'];
+                        $redirectTo = $isBillingOfficer ? 'account/subscription.php' : 'dashboard.php';
+                        $_SESSION['flash_error'] = 'Your subscription has expired. Records are read-only until the group renews - managers can pay from the Subscription page.';
+                    } elseif (false) {
                         $chamaName = $chama['name'];
                         $redirectTo = 'account/subscription.php';
                         $_SESSION['flash_error'] = 'Your group is suspended because its subscription expired. Pay the fee below to restore full access.';
@@ -60,12 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'chama_id' => $chamaId,
                     'chama_name' => $chamaName,
                 ];
+                $pdo->prepare('DELETE FROM login_attempts WHERE email = ?')->execute([$email]);
+                session_regenerate_id(true);   // stop session fixation
                 audit_log('auth.login', 'user', (int)$user['id'], sprintf('%s logged in (%s)', $user['name'], $user['role']));
                 header('Location: ' . url($redirectTo));
                 exit;
             }
         }
-    } else {
+    } elseif ($error === '') {
+        $pdo->prepare('INSERT INTO login_attempts (email, ip_address) VALUES (?, ?)')
+            ->execute([substr($email, 0, 150), substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45)]);
         $error = 'Invalid email or password.';
     }
 }
@@ -92,6 +113,7 @@ $page_title = 'Login';
                 </div>
                 <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
                 <form method="post" class="row g-3">
+            <?= csrf_field() ?>
                     <div class="col-12">
                         <label class="form-label required">Email</label>
                         <input type="email" class="form-control" name="email" value="<?= e($_POST['email'] ?? '') ?>" required>

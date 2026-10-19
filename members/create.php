@@ -1,6 +1,7 @@
 <?php
 $page_title = 'Add Member';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../includes/plans.php';
 require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
@@ -26,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = trim($_POST['address'] ?? '');
     $join_date = $_POST['join_date'] ?? date('Y-m-d');
     $status = $_POST['status'] ?? 'active';
+    $slot = plan_member_slot_available(current_chama() ?: []);
 
     if ($member_no && $full_name && $join_date) {
         $chamaId = current_chama_id();
@@ -34,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$chamaId, $member_no]);
             if ((int)$stmt->fetchColumn() > 0) {
                 flash_error('That member number is already used in this group. Choose a different one.');
+            } elseif ($status === 'active' && !$slot['ok']) {
+                flash_error($slot['message']);
             } else {
                 $stmt = $pdo->prepare('INSERT INTO members (chama_id, member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?,?)');
                 $stmt->execute([$chamaId, $member_no, $full_name, $phone, $email, $address, $join_date, $status]);
@@ -50,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card-header">Add Member</div>
     <div class="card-body">
         <form method="post" class="row g-3">
+            <?= csrf_field() ?>
             <div class="col-md-4"><label class="form-label required">Member No</label><input class="form-control" name="member_no" placeholder="M002" required></div>
             <div class="col-md-8"><label class="form-label required">Full Name</label><input class="form-control" name="full_name" required></div>
             <div class="col-md-6"><label class="form-label">Phone</label><input class="form-control" name="phone"></div>

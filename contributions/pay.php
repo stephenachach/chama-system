@@ -42,6 +42,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'pay')
 
 // --- Simulation: pretend the customer accepted the prompt -------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'complete_sim') {
+    // Demo control only: in sandbox/production a payment can be confirmed
+    // solely by Safaricom's callback / status query.
+    if (!mpesa_is_simulation()) {
+        http_response_code(403);
+        flash_error('Simulation is only available in demo mode. Live payments are confirmed by Safaricom.');
+        header('Location: ' . url('contributions/pay.php'));
+        exit;
+    }
     $paymentId = (int)($_POST['payment_id'] ?? 0);
     $stmt = $pdo->prepare('SELECT * FROM mpesa_payments WHERE id = ? AND chama_id = ? LIMIT 1');
     $stmt->execute([$paymentId, (int)$chama['id']]);
@@ -167,6 +175,7 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="card-header">Send M-Pesa prompt</div>
             <div class="card-body">
                 <form method="post" class="row g-3">
+            <?= csrf_field() ?>
                     <input type="hidden" name="action" value="pay">
                     <input type="hidden" name="member_id" value="<?= (int)$member['id'] ?>">
                     <div class="col-12">
@@ -205,6 +214,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <div id="pendingState" class="alert alert-secondary py-2 mb-3">Checking with M-Pesa&hellip;</div>
                 <?php if ($simulating): ?>
                 <form method="post" class="d-inline">
+            <?= csrf_field() ?>
                     <input type="hidden" name="action" value="complete_sim">
                     <input type="hidden" name="payment_id" value="<?= (int)$pending['id'] ?>">
                     <button class="btn btn-outline-success">Simulate: customer paid</button>

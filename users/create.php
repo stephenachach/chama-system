@@ -45,7 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else { flash_error('Name, email and password of at least 6 characters are required.'); }
 }
 ?>
-<div class="card shadow-sm mx-auto" style="max-width: 760px;"><div class="card-header">Add System User</div><div class="card-body"><form method="post" class="row g-3"><div class="col-md-6"><label class="form-label required">Name</label><input class="form-control" name="name" required></div><div class="col-md-6"><label class="form-label required">Email</label><input class="form-control" type="email" name="email" required></div><div class="col-md-6"><label class="form-label required">Password</label><input class="form-control" type="password" name="password" required minlength="6"></div><div class="col-12">
+<div class="card shadow-sm mx-auto" style="max-width: 760px;"><div class="card-header">Add System User</div><div class="card-body"><form method="post" class="row g-3">
+            <?= csrf_field() ?><div class="col-md-6"><label class="form-label required">Name</label><input class="form-control" name="name" required></div><div class="col-md-6"><label class="form-label required">Email</label><input class="form-control" type="email" name="email" required></div><div class="col-md-6"><label class="form-label required">Password</label><input class="form-control" type="password" name="password" required minlength="6"></div><div class="col-12">
                     <label class="form-label required">Account Type</label>
                     <div class="btn-group" role="group" aria-label="Account type selection">
                         <input type="radio" class="btn-check" name="role" id="role_member" value="member" autocomplete="off" <?= ($_POST['role'] ?? 'member') === 'member' ? 'checked' : '' ?>>

@@ -1,4 +1,5 @@
 <?php
+define('CSRF_EXEMPT', true);   // public form / machine endpoint: CSRF handled per-flow
 /**
  * start.php - public pilot signup (Phase 4).
  *
@@ -197,6 +198,7 @@ if ($done) {
             <?php endif; ?>
 
             <form method="post" class="row g-3" autocomplete="on">
+            <?= csrf_field() ?>
                 <input type="text" name="website" value="" style="position:absolute; left:-9999px;" tabindex="-1" autocomplete="off" aria-hidden="true">
 
                 <div class="col-md-8">
@@ -222,7 +224,7 @@ if ($done) {
                     <select class="form-select form-select-lg" name="tier">
                         <?php foreach ($tiers as $key => $t): ?>
                         <option value="<?= e($key) ?>" <?= ($old['tier'] ?? $_GET['tier'] ?? 'growth') === $key ? 'selected' : '' ?>>
-                            <?= e($t['label']) ?> - KSh <?= number_format($t['setup'], 0) ?> setup, then KSh <?= number_format($t['monthly'], 0) ?>/month (<?= e($t['members']) ?>)
+                            <?= e($t['label']) ?> - KSh <?= number_format($t['monthly'], 0) ?>/month (<?= e($t['members']) ?>)<?= ($t['setup'] ?? 0) > 0 ? ', plus KSh ' . number_format($t['setup'], 0) . ' setup' : '' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -257,7 +259,7 @@ if ($done) {
     </div>
     <p class="text-center text-white-50 small mt-3 mb-0">Already a member of a chama on this system?
         <a href="<?= url('login.php') ?>" class="link-light">Log in</a> or
-        <a href="<?= url('register.php') ?>" class="link-light">join your group</a>.</p>
+        <a href="<?= url('register.php') ?>" class="link-light">join your group</a>. · <a href="<?= url('privacy.php') ?>" class="link-light">Privacy &amp; security</a></p>
 </div>
 </body>
 </html>

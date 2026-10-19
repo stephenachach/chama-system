@@ -1,5 +1,7 @@
 <?php
+define('CSRF_EXEMPT', true);   // public form / machine endpoint: CSRF handled per-flow
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/includes/plans.php';
 
 if (is_logged_in()) {
     header('Location: ' . url('dashboard.php'));
@@ -130,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 <div class="alert alert-warning">No group is currently open for registration. Please contact your chama administrator.</div>
             <?php else: ?>
             <form method="post" class="row g-3">
+            <?= csrf_field() ?>
                 <?php if ($selectedChama): ?>
                     <input type="hidden" name="chama_id" value="<?= (int)$selectedChama['id'] ?>">
                     <input type="hidden" name="chama_slug" value="<?= e($selectedChama['slug']) ?>">

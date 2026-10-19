@@ -48,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (!empty($eligibility['reasons'])): ?>
             <div class="alert alert-warning py-2">This loan needs review for: <strong><?= e(implode(', ', $eligibility['reasons'])) ?></strong></div>
         <?php endif; ?>
-        <form method="post"><button class="btn btn-success" name="action" value="approve">Approve Loan</button> <button class="btn btn-danger" name="action" value="reject">Reject Loan</button> <a class="btn btn-secondary" href="<?= url('loans/index.php') ?>">Cancel</a></form>
+        <form method="post">
+            <?= csrf_field() ?><button class="btn btn-success" name="action" value="approve">Approve Loan</button> <button class="btn btn-danger" name="action" value="reject">Reject Loan</button> <a class="btn btn-secondary" href="<?= url('loans/index.php') ?>">Cancel</a></form>
     </div>
 </div>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/mpesa.php';
 require_login();
 $page_title = $page_title ?? APP_NAME;
 $user = current_user();
@@ -10,6 +11,11 @@ $uri = $_SERVER['REQUEST_URI'] ?? '';
 $path = parse_url($uri, PHP_URL_PATH);
 $currentPage = basename($path);
 $currentFolder = trim(dirname($path), '/');
+
+// Some legacy pages include this header and only redirect afterwards (e.g.
+// after a successful POST). Guarantee that always works, whatever the page
+// size, by holding all output in our own buffer until the script finishes.
+ob_start();
 $activeDashboard = $currentPage === 'dashboard.php';
 $activeMembers = $currentFolder === 'members';
 $activeContributions = $currentFolder === 'contributions';
@@ -41,6 +47,14 @@ $showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expir
     <link href="<?= url('assets/css/style.css') ?>?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>" rel="stylesheet">
 </head>
 <body>
+<?php $mpesaMode = mpesa_mode(); if ($mpesaMode === 'simulation'): ?>
+<div class="alert alert-info rounded-0 mb-0 py-1 text-center small fw-semibold mb-0">DEMO MODE - no real money moves; M-Pesa prompts and SMS are simulated.</div>
+<?php elseif ($mpesaMode === 'sandbox'): ?>
+<div class="alert alert-warning rounded-0 mb-0 py-1 text-center small fw-semibold">SANDBOX - Safaricom test environment; test money only.</div>
+<?php endif; ?>
+<?php if (function_exists('subscription_read_only') && subscription_read_only()): ?>
+<div class="alert alert-warning rounded-0 mb-0 py-1 text-center small">Read-only: the subscription expired. Viewing, statements and exports still work; editing is off until renewal. <a href="<?= url('account/subscription.php') ?>" class="alert-link fw-semibold">Renew now</a></div>
+<?php endif; ?>
 <nav class="navbar navbar-expand-lg navbar-light sticky-top shadow-sm app-nav">
     <?php /* ---- Tier 1: brand + who is logged in + Logout. Always visible at every width. ---- */ ?>
     <div class="container-fluid px-3 px-lg-4 nav-tier1">

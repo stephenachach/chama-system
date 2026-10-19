@@ -1,4 +1,5 @@
 <?php
+define('CSRF_EXEMPT', true);   // public form / machine endpoint: CSRF handled per-flow
 /**
  * M-Pesa Daraja STK Push callback endpoint. PUBLIC - no login, no session.
  *
@@ -37,6 +38,13 @@ if (!hash_equals((string)MPESA_CALLBACK_TOKEN, $token)) {
     mpesa_log('in', 'callback:rejected', ['reason' => 'invalid token', 'body' => $body]);
     http_response_code(403);
     $respond(1, 'Rejected');
+}
+
+// Refuse to process real money while the default shared token is still in use.
+if (MPESA_ENV === 'production' && hash_equals('change-me-in-mpesa-secrets', (string)MPESA_CALLBACK_TOKEN)) {
+    mpesa_log('in', 'callback:rejected', ['reason' => 'default callback token in production']);
+    http_response_code(503);
+    $respond(1, 'Endpoint not configured');
 }
 
 mpesa_log('in', 'callback', $body, $body['Body']['stkCallback']['CheckoutRequestID'] ?? null);
@@ -90,6 +98,21 @@ if (!$payment) {
         }
 
         if ($resultCode === 0) {
+            // P0 verification: the confirmed amount must equal what we asked
+            // for, and a live group payment must have gone out on the group's
+            // own route - never on the platform shortcode.
+            $expected = (float)$memberPayment['amount'];
+            $used = (string)($memberPayment['shortcode_used'] ?? '');
+            if ($amount === null || abs($expected - (float)$amount) > 0.009) {
+                mpesa_pay_fail((int)$memberPayment['id'], 'Callback amount ' . var_export($amount, true) . ' does not match expected ' . number_format($expected, 2));
+                mpesa_log('in', 'callback:amount-mismatch', ['mpesa_payment_id' => (int)$memberPayment['id'], 'expected' => $expected, 'received' => $amount], $checkoutId, $receipt);
+                $respond(0, 'Accepted');
+            }
+            if (!mpesa_is_simulation() && $used !== '' && $used !== 'SIMULATION' && $used === MPESA_SHORTCODE) {
+                mpesa_pay_fail((int)$memberPayment['id'], 'Route violation: group funds attempted on platform shortcode');
+                mpesa_log('in', 'callback:route-violation', ['mpesa_payment_id' => (int)$memberPayment['id'], 'shortcode_used' => $used], $checkoutId, $receipt);
+                $respond(1, 'Rejected');
+            }
             $ok = mpesa_pay_complete((int)$memberPayment['id'], (string)$receipt, $phone, $amount);
             mpesa_log('in', $ok ? 'callback:paid' : 'callback:error', [
                 'mpesa_payment_id' => (int)$memberPayment['id'],
@@ -123,6 +146,12 @@ if ($merchantId !== '' && empty($payment['merchant_request_id'])) {
 
 // --- 4. Apply the result ----------------------------------------------------
 if ($resultCode === 0) {
+    $expected = (float)$payment['amount'];
+    if ($amount === null || abs($expected - (float)$amount) > 0.009) {
+        mark_payment_failed((int)$payment['id'], 'Callback amount ' . var_export($amount, true) . ' does not match expected ' . number_format($expected, 2));
+        mpesa_log('in', 'callback:amount-mismatch', ['payment_id' => (int)$payment['id'], 'expected' => $expected, 'received' => $amount], $checkoutId, $receipt);
+        $respond(0, 'Accepted');
+    }
     $ok = complete_pending_payment((int)$payment['id'], (string)$receipt, $phone, $amount);
     if ($ok) {
         $stmt = $pdo->prepare('SELECT name, plan_expires_at FROM chamas WHERE id = ?');

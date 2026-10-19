@@ -71,8 +71,8 @@ $pendingLoanCount = count($pendingLoans);
                     <td><?= e($u['address']) ?></td>
                     <td><?= e($u['created_at']) ?></td>
                     <td>
-                        <a class="btn btn-sm btn-success" onclick="return confirm('Approve this registration?')" href="<?= url('users/approve_registration.php?id=' . $u['user_id'] . '&action=approve') ?>">Approve</a>
-                        <a class="btn btn-sm btn-danger" onclick="return confirm('Reject this registration?')" href="<?= url('users/approve_registration.php?id=' . $u['user_id'] . '&action=reject') ?>">Reject</a>
+                        <form method="post" action="<?= url('users/approve_registration.php') ?>" class="d-inline" onsubmit="return confirm('Approve this registration?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$u['user_id'] ?>"><input type="hidden" name="action" value="approve"><button class="btn btn-sm btn-success">Approve</button></form>
+                        <form method="post" action="<?= url('users/approve_registration.php') ?>" class="d-inline" onsubmit="return confirm('Reject this registration?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$u['user_id'] ?>"><input type="hidden" name="action" value="reject"><button class="btn btn-sm btn-danger">Reject</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -107,8 +107,8 @@ $pendingLoanCount = count($pendingLoans);
                     <td><?= e($loan['application_date']) ?></td>
                     <td><span class="badge bg-secondary">Pending</span></td>
                     <td>
-                        <a class="btn btn-sm btn-outline-success" href="<?= url('users/approve_loan.php?id=' . $loan['loan_id'] . '&action=approve') ?>">Approve</a>
-                        <a class="btn btn-sm btn-outline-danger" href="<?= url('users/approve_loan.php?id=' . $loan['loan_id'] . '&action=reject') ?>">Reject</a>
+                        <form method="post" action="<?= url('users/approve_loan.php') ?>" class="d-inline"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$loan['loan_id'] ?>"><input type="hidden" name="action" value="approve"><button class="btn btn-sm btn-outline-success">Approve</button></form>
+                        <form method="post" action="<?= url('users/approve_loan.php') ?>" class="d-inline"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$loan['loan_id'] ?>"><input type="hidden" name="action" value="reject"><button class="btn btn-sm btn-outline-danger">Reject</button></form>
                     </td>
                 </tr>
             <?php endforeach; ?>

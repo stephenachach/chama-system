@@ -336,6 +336,26 @@ function subscription_restricted_mode(): bool
     return in_array($user['role'] ?? '', ['admin', 'treasurer'], true);
 }
 
+/**
+ * Expired for non-payment: the group keeps READ-ONLY access to its own
+ * history (view, statements, exports) instead of a lockout. We never hold a
+ * group's records hostage. Writes are blocked centrally in the gate below.
+ */
+function subscription_read_only(): bool
+{
+    $chama = function_exists('current_chama') ? current_chama() : null;
+    if (!$chama) {
+        return false;
+    }
+    return ($chama['status'] ?? '') === 'suspended' && ($chama['suspension_reason'] ?? '') === 'nonpayment';
+}
+
+/** POST targets still allowed while read-only (renewing, security, exit). */
+function subscription_read_only_post_allowlist(): array
+{
+    return ['billing/pay.php', 'mpesa/status.php', 'account/password.php', 'logout.php', 'login.php'];
+}
+
 /** Pages a restricted user may still open. */
 function subscription_allowed_paths(): array
 {
@@ -352,6 +372,25 @@ function subscription_allowed_paths(): array
 /** Redirect a restricted user to their billing page unless they are already there. */
 function enforce_subscription_gate(): void
 {
+    // Expired but not manually suspended: read-only, never a lockout.
+    if (subscription_read_only()) {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+            $path = str_replace('\\', '/', (string)parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
+            foreach (subscription_read_only_post_allowlist() as $allowed) {
+                if (str_ends_with($path, '/' . $allowed)) {
+                    return;
+                }
+            }
+            if (empty($_SESSION['flash_error'])) {
+                $_SESSION['flash_error'] = 'Your subscription has expired, so records are read-only right now. Viewing, statements and exports still work - renew to edit again.';
+            }
+            $back = $_SERVER['HTTP_REFERER'] ?? url('dashboard.php');
+            header('Location: ' . $back);
+            exit;
+        }
+        return;
+    }
+
     if (!subscription_restricted_mode()) {
         return;
     }
@@ -397,12 +436,12 @@ function chama_billing_phone(array $chama): string
  *
  * @return array{ok:bool,payment_id:int,checkout_id:string,simulated:bool,amount:float,period:array,error:string}
  */
-function initiate_subscription_stk(array $chama, string $phone, ?int $userId, int $months = 0): array
+function initiate_subscription_stk(array $chama, string $phone, ?int $userId, int $months = 0, ?float $amountOverride = null): array
 {
     global $pdo;
 
     $months = $months > 0 ? $months : max(1, (int)SUBSCRIPTION_BILLING_MONTHS);
-    $amount = subscription_amount_due($chama) * $months;
+    $amount = $amountOverride !== null ? round($amountOverride, 2) : subscription_amount_due($chama) * $months;
     $period = subscription_next_period($chama, $months);
     $fail = function (string $message) use ($period, $amount) {
         return ['ok' => false, 'payment_id' => 0, 'checkout_id' => '', 'simulated' => false,

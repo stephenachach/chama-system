@@ -96,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card-header">Chama Details</div>
     <div class="card-body">
         <form method="post" class="row g-3">
+            <?= csrf_field() ?>
             <div class="col-md-6"><label class="form-label required">Chama Name</label><input class="form-control" name="name" value="<?= e($_POST['name'] ?? '') ?>" required></div>
             <div class="col-md-3"><label class="form-label">Phone</label><input class="form-control" name="phone" value="<?= e($_POST['phone'] ?? '') ?>"></div>
             <div class="col-md-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" value="<?= e($_POST['email'] ?? '') ?>"></div>

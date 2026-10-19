@@ -43,6 +43,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 audit_log('pilot.start_billing', 'chama', $id, sprintf('%s: pilot ended - subscription billing starts now (KSh %s/mo)', $chama['name'], number_format((float)$chama['monthly_fee'], 2)));
                 flash_success($chama['name'] . ': billing starts now. They will see the renew button at next login.');
                 break;
+            case 'verify_route':
+                $pdo->prepare('UPDATE chamas SET pay_verified = 1, pay_verified_at = NOW() WHERE id = ? AND pay_shortcode <> ?')->execute([$id, '']);
+                audit_log('route.verify', 'chama', $id, sprintf('%s: M-Pesa route %s verified - live group collection ENABLED on their shortcode', $chama['name'], $chama['pay_shortcode']));
+                flash_success($chama['name'] . ': route verified. Member money now settles to THEIR shortcode.');
+                break;
+            case 'unverify_route':
+                $pdo->prepare('UPDATE chamas SET pay_verified = 0, pay_verified_at = NULL WHERE id = ?')->execute([$id]);
+                audit_log('route.unverify', 'chama', $id, sprintf('%s: route verification withdrawn - live collection disabled', $chama['name']));
+                flash_success($chama['name'] . ': verification withdrawn.');
+                break;
+            case 'sms_topup':
+                $units = max(0, (int)($_POST['units'] ?? 0));
+                $pdo->prepare('UPDATE chamas SET sms_balance = sms_balance + ? WHERE id = ?')->execute([$units, $id]);
+                audit_log('sms.topup', 'chama', $id, sprintf('%s: SMS credit +%d units', $chama['name'], $units));
+                flash_success($chama['name'] . ': +' . $units . ' SMS units.');
+                break;
             case 'convert':
                 $pdo->prepare('UPDATE chamas SET is_pilot = 0 WHERE id = ?')->execute([$id]);
                 audit_log('pilot.convert', 'chama', $id, sprintf('%s: converted to a regular paying customer', $chama['name']));
@@ -150,6 +166,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <td><span class="badge bg-<?= $p['status'] === 'active' ? 'success' : 'danger' ?>"><?= e(ucfirst((string)$p['status'])) ?></span></td>
                     <td class="text-end">
                         <form method="post" class="d-inline">
+            <?= csrf_field() ?>
                             <input type="hidden" name="chama_id" value="<?= (int)$p['id'] ?>">
                             <?php if ((int)$p['setup_fee_paid'] === 0): ?>
                                 <button name="action" value="setup_paid" class="btn btn-sm btn-success" title="Mark the one-off setup fee as collected">Fee paid</button>
@@ -159,6 +176,46 @@ require_once __DIR__ . '/../includes/header.php';
                             <button name="action" value="extend" class="btn btn-sm btn-outline-secondary" title="Give them 30 more free days">+30d</button>
                             <button name="action" value="start_billing" class="btn btn-sm btn-outline-primary" title="End the pilot: subscription billing starts today">Bill now</button>
                             <button name="action" value="convert" class="btn btn-sm btn-outline-success" title="They paid: mark as a regular customer">Customer</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header">All groups: collection routes &amp; SMS credit</div>
+    <div class="card-body table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead><tr><th>Group</th><th>Collection shortcode</th><th>Route</th><th>SMS units</th><th class="text-end">Actions</th></tr></thead>
+            <tbody>
+            <?php
+            $all = $pdo->query('SELECT id, name, pay_shortcode, pay_verified, sms_balance, tier FROM chamas ORDER BY name')->fetchAll();
+            foreach ($all as $c): ?>
+                <tr>
+                    <td class="fw-semibold"><?= e($c['name']) ?></td>
+                    <td><code><?= e($c['pay_shortcode'] !== '' ? $c['pay_shortcode'] : '-') ?></code></td>
+                    <td>
+                        <?php if ($c['pay_shortcode'] === ''): ?><span class="badge bg-secondary">Manual only</span>
+                        <?php elseif ((int)$c['pay_verified'] === 1): ?><span class="badge bg-success">Verified</span>
+                        <?php else: ?><span class="badge bg-warning text-dark">Awaiting verification</span><?php endif; ?>
+                    </td>
+                    <td><?= (int)$c['sms_balance'] ?></td>
+                    <td class="text-end">
+                        <form method="post" class="d-inline-flex gap-1 align-items-center justify-content-end">
+            <?= csrf_field() ?>
+                            <input type="hidden" name="chama_id" value="<?= (int)$c['id'] ?>">
+                            <?php if ($c['pay_shortcode'] !== ''): ?>
+                                <?php if ((int)$c['pay_verified'] === 1): ?>
+                                    <button name="action" value="unverify_route" class="btn btn-sm btn-outline-warning">Unverify</button>
+                                <?php else: ?>
+                                    <button name="action" value="verify_route" class="btn btn-sm btn-success" title="Confirm the group owns this shortcode (test payment checked)">Verify route</button>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            <input type="number" name="units" min="1" max="100000" value="100" style="width:80px" class="form-control form-control-sm">
+                            <button name="action" value="sms_topup" class="btn btn-sm btn-outline-primary">+SMS</button>
                         </form>
                     </td>
                 </tr>

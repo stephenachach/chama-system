@@ -276,10 +276,76 @@ function migrate_phase3_schema(PDO $pdo): void
     }
 }
 
+// ---------------------------------------------------------------------------
+// Phase 5 hardening: group payment routes, configurable plans, SMS credit,
+// login throttling. Additive and idempotent like the others.
+// ---------------------------------------------------------------------------
+function migrate_funds_schema(PDO $pdo): void
+{
+    if (!column_exists($pdo, 'chamas', 'id')) {
+        return;
+    }
+    if (!column_exists($pdo, 'chamas', 'pay_shortcode')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN pay_shortcode VARCHAR(20) NOT NULL DEFAULT '' AFTER sms_last_reminder");
+    }
+    if (!column_exists($pdo, 'chamas', 'pay_passkey')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN pay_passkey VARCHAR(120) NOT NULL DEFAULT '' AFTER pay_shortcode");
+    }
+    if (!column_exists($pdo, 'chamas', 'pay_verified')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN pay_verified TINYINT(1) NOT NULL DEFAULT 0 AFTER pay_passkey");
+    }
+    if (!column_exists($pdo, 'chamas', 'pay_verified_at')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN pay_verified_at DATETIME NULL AFTER pay_verified");
+    }
+    if (!column_exists($pdo, 'chamas', 'sms_balance')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN sms_balance INT NOT NULL DEFAULT 0 AFTER pay_verified_at");
+    }
+    if (!column_exists($pdo, 'mpesa_payments', 'shortcode_used')) {
+        $pdo->exec("ALTER TABLE mpesa_payments ADD COLUMN shortcode_used VARCHAR(20) NOT NULL DEFAULT '' AFTER merchant_request_id");
+    }
+    if (!column_exists($pdo, 'plans', 'id')) {
+        $pdo->exec("CREATE TABLE plans (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            plan_key VARCHAR(30) NOT NULL,
+            label VARCHAR(80) NOT NULL DEFAULT '',
+            monthly DECIMAL(10,2) NOT NULL DEFAULT 0,
+            max_members INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0 = unlimited',
+            annual_months_pay TINYINT UNSIGNED NOT NULL DEFAULT 10 COMMENT 'pay N months for 12',
+            sort INT NOT NULL DEFAULT 0,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            description VARCHAR(255) NOT NULL DEFAULT '',
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_plans_key (plan_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("INSERT INTO plans (plan_key, label, monthly, max_members, sort, description) VALUES
+            ('micro',        'Micro - 8 to 10 active members',   150,  10, 1, 'Small table-banking and merry-go-round groups'),
+            ('small',        'Small - 10 to 15 active members',  250,  15, 2, 'Growing savings groups'),
+            ('community',    'Community - up to 20 members',     500,  20, 3, 'Established chamas with monthly meetings'),
+            ('growth',       'Growth - up to 100 members',      1200, 100, 4, 'Large chamas with real float'),
+            ('welfare_plus', 'Welfare Plus - up to 250 members', 2500, 250, 5, 'Welfare societies and alumni groups'),
+            ('enterprise',   'Large organisation - quoted',     3500,   0, 6, 'From KSh 3,500/month, quoted by requirements')");
+    }
+    if (!column_exists($pdo, 'login_attempts', 'id')) {
+        $pdo->exec("CREATE TABLE login_attempts (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            email VARCHAR(150) NOT NULL DEFAULT '',
+            ip_address VARCHAR(45) NOT NULL DEFAULT '',
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_login_email (email, created_at),
+            KEY idx_login_ip (ip_address, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+    // Retire the old hard-coded tier names in favour of the plans table keys.
+    $pdo->exec("UPDATE chamas SET tier = 'community' WHERE tier = 'standard'");
+    $pdo->exec("UPDATE chamas SET tier = 'welfare_plus' WHERE tier = 'premium'");
+}
+
 try {
     migrate_schema($pdo);
     migrate_billing_schema($pdo);
     migrate_phase3_schema($pdo);
+    migrate_funds_schema($pdo);
 } catch (Throwable $ignored) {
     // When the core tables have not been imported yet, skip migration;
     // importing database.sql creates everything in the correct shape.

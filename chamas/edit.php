@@ -90,12 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a class="btn btn-success btn-sm" href="<?= url('billing/pay.php?chama_id=' . (int)$chama['id']) ?>">Bill by M-Pesa</a>
-            <form method="post" action="<?= url('billing/extend.php') ?>" class="d-inline">
+            <form method="post" action="<?= url('billing/extend.php') ?>
+            <?= csrf_field() ?>" class="d-inline">
                 <input type="hidden" name="chama_id" value="<?= (int)$chama['id'] ?>">
                 <input type="hidden" name="days" value="30">
                 <button class="btn btn-outline-secondary btn-sm">Grant 30 days</button>
             </form>
-            <form method="post" action="<?= url('billing/mark_paid.php') ?>" class="d-inline">
+            <form method="post" action="<?= url('billing/mark_paid.php') ?>
+            <?= csrf_field() ?>" class="d-inline">
                 <input type="hidden" name="chama_id" value="<?= (int)$chama['id'] ?>">
                 <button class="btn btn-outline-primary btn-sm" onclick="return confirm('Record a cash/bank payment of <?= e(number_format((float)$chama['monthly_fee'], 2)) ?> for 1 month?')">Mark paid (cash)</button>
             </form>
@@ -107,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card-header">Chama Details</div>
     <div class="card-body">
         <form method="post" class="row g-3">
+            <?= csrf_field() ?>
             <div class="col-md-6"><label class="form-label required">Chama Name</label><input class="form-control" name="name" value="<?= e($chama['name']) ?>" required></div>
             <div class="col-md-3"><label class="form-label">Phone</label><input class="form-control" name="phone" value="<?= e($chama['phone']) ?>"></div>
             <div class="col-md-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" value="<?= e($chama['email']) ?>"></div>

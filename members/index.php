@@ -39,7 +39,7 @@ if ($q !== '') {
                     <tr>
                         <td><?= e($m['member_no']) ?></td><td><?= e($m['full_name']) ?></td><td><?= e($m['phone']) ?></td><td><?= e($m['email']) ?></td><td><?= e($m['join_date']) ?></td>
                         <td><span class="badge bg-<?= $m['status'] === 'active' ? 'success' : 'secondary' ?>"><?= e(ucfirst($m['status'])) ?></span></td>
-                        <td><a class="btn btn-sm btn-outline-success" title="PDF statement" href="<?= url('members/statement.php?id=' . $m['id']) ?>"><i class="fa-solid fa-file-pdf"></i> Statement</a> <a class="btn btn-sm btn-outline-primary" href="<?= url('members/edit.php?id=' . $m['id']) ?>">Edit</a> <a class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this member?')" href="<?= url('members/delete.php?id=' . $m['id']) ?>">Delete</a></td>
+                        <td><a class="btn btn-sm btn-outline-success" title="PDF statement" href="<?= url('members/statement.php?id=' . $m['id']) ?>"><i class="fa-solid fa-file-pdf"></i> Statement</a> <a class="btn btn-sm btn-outline-primary" href="<?= url('members/edit.php?id=' . $m['id']) ?>">Edit</a> <form method="post" action="<?= url('members/delete.php') ?>" class="d-inline" onsubmit="return confirm('Delete this member?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$m['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$members): ?><tr><td colspan="7" class="text-center text-muted">No members found.</td></tr><?php endif; ?>
