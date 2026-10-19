@@ -56,7 +56,7 @@ $pending = $pendingStmt->fetchAll();
         </div>
         <div class="d-flex gap-2">
             <a href="<?= url('chamas/create.php') ?>" class="btn btn-primary btn-lg">New Chama</a>
-            <a href="<?= url('mpesa/logs.php') ?>" class="btn btn-outline-secondary btn-lg">M-Pesa Logs</a>
+            <a href="<?= url('billing/plans.php') ?>" class="btn btn-outline-primary btn-lg">Plans &amp; Pricing</a> <a href="<?= url('billing/pilots.php') ?>" class="btn btn-outline-primary btn-lg">Pilots &amp; Routes</a> <a href="<?= url('mpesa/logs.php') ?>" class="btn btn-outline-secondary btn-lg">M-Pesa Logs</a>
         </div>
     </div>
 </div>
