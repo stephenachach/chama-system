@@ -588,3 +588,10 @@ main .row > [class*="col-"] {
 @media print {
     .app-nav .nav-tier2 { display: none !important; }
 }
+
+/* Authenticated app pages: light neutral background so text outside cards
+   stays readable (public landing pages keep the blue hero look). */
+body.app-page {
+    background: #f2f5fa !important;
+    color: var(--text);
+}

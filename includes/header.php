@@ -46,7 +46,7 @@ $showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expir
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link href="<?= url('assets/css/style.css') ?>?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>" rel="stylesheet">
 </head>
-<body>
+<body class="app-page">
 <?php $mpesaMode = mpesa_mode(); if ($mpesaMode === 'simulation'): ?>
 <div class="alert alert-info rounded-0 mb-0 py-1 text-center small fw-semibold mb-0">DEMO MODE - no real money moves; M-Pesa prompts and SMS are simulated.</div>
 <?php elseif ($mpesaMode === 'sandbox'): ?>

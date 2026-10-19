@@ -54,9 +54,11 @@ $pending = $pendingStmt->fetchAll();
             <h2 class="fw-bold mb-1">Subscription Billing</h2>
             <div class="text-muted">Plan expiry, M-Pesa collection and automatic suspension for every chama.</div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             <a href="<?= url('chamas/create.php') ?>" class="btn btn-primary btn-lg">New Chama</a>
-            <a href="<?= url('billing/plans.php') ?>" class="btn btn-outline-primary btn-lg">Plans &amp; Pricing</a> <a href="<?= url('billing/pilots.php') ?>" class="btn btn-outline-primary btn-lg">Pilots &amp; Routes</a> <a href="<?= url('mpesa/logs.php') ?>" class="btn btn-outline-secondary btn-lg">M-Pesa Logs</a>
+            <a href="<?= url('billing/plans.php') ?>" class="btn btn-outline-primary btn-lg"><i class="fa-solid fa-tags me-1"></i>Plans &amp; Pricing</a>
+            <a href="<?= url('billing/pilots.php') ?>" class="btn btn-outline-primary btn-lg"><i class="fa-solid fa-rocket me-1"></i>Pilots &amp; Routes</a>
+            <a href="<?= url('mpesa/logs.php') ?>" class="btn btn-outline-secondary btn-lg">M-Pesa Logs</a>
         </div>
     </div>
 </div>
@@ -155,13 +157,13 @@ $pending = $pendingStmt->fetchAll();
                     <td>
                         <a href="<?= url('billing/pilots.php') ?>" class="btn btn-outline-warning"><i class="fa-solid fa-rocket me-1"></i>Pilot pipeline</a>
                 <a class="btn btn-sm btn-success" href="<?= url('billing/pay.php?chama_id=' . (int)$c['id']) ?>">Bill M-Pesa</a>
-                        <form method="post" action="<?= url('billing/mark_paid.php') ?>
-            <?= csrf_field() ?>" class="d-inline">
+                        <form method="post" action="<?= url('billing/mark_paid.php') ?>" class="d-inline">
+            <?= csrf_field() ?>
                             <input type="hidden" name="chama_id" value="<?= (int)$c['id'] ?>">
                             <button class="btn btn-sm btn-outline-primary" onclick="return confirm('Record <?= e($c['name']) ?> as paid by cash/bank for 1 month?')">Mark paid</button>
                         </form>
-                        <form method="post" action="<?= url('billing/extend.php') ?>
-            <?= csrf_field() ?>" class="d-inline">
+                        <form method="post" action="<?= url('billing/extend.php') ?>" class="d-inline">
+            <?= csrf_field() ?>
                             <input type="hidden" name="chama_id" value="<?= (int)$c['id'] ?>">
                             <input type="hidden" name="days" value="30">
                             <button class="btn btn-sm btn-outline-secondary" title="Give 30 days free">+30d</button>

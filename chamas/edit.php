@@ -90,14 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="d-flex gap-2 flex-wrap">
             <a class="btn btn-success btn-sm" href="<?= url('billing/pay.php?chama_id=' . (int)$chama['id']) ?>">Bill by M-Pesa</a>
-            <form method="post" action="<?= url('billing/extend.php') ?>
-            <?= csrf_field() ?>" class="d-inline">
+            <form method="post" action="<?= url('billing/extend.php') ?>" class="d-inline">
+            <?= csrf_field() ?>
                 <input type="hidden" name="chama_id" value="<?= (int)$chama['id'] ?>">
                 <input type="hidden" name="days" value="30">
                 <button class="btn btn-outline-secondary btn-sm">Grant 30 days</button>
             </form>
-            <form method="post" action="<?= url('billing/mark_paid.php') ?>
-            <?= csrf_field() ?>" class="d-inline">
+            <form method="post" action="<?= url('billing/mark_paid.php') ?>" class="d-inline">
+            <?= csrf_field() ?>
                 <input type="hidden" name="chama_id" value="<?= (int)$chama['id'] ?>">
                 <button class="btn btn-outline-primary btn-sm" onclick="return confirm('Record a cash/bank payment of <?= e(number_format((float)$chama['monthly_fee'], 2)) ?> for 1 month?')">Mark paid (cash)</button>
             </form>

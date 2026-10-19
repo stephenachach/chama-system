@@ -1,0 +1,12 @@
+# M-Pesa credentials - NEVER commit these
+config/mpesa-secrets.php
+config/sms-secrets.php
+
+# Runtime cache (OAuth tokens, maintenance locks)
+storage/*
+!storage/.gitkeep
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.log
