@@ -193,13 +193,13 @@ if ($isManager) {
     $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
     $dashSub = subscription_status($chama ?: []);
     ?>
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-3">
+    <div class="page-head d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
         <div>
             <h1 class="h3 fw-bold mb-1"><?= e($greeting) ?>, <?= e($user['name']) ?></h1>
-            <div class="text-muted"><?= e($chama['name'] ?? '') ?> &middot; <?= e(date('l j F Y')) ?></div>
+            <div class="text-muted mb-0"><?= e($chama['name'] ?? '') ?> &middot; <?= e(date('l j F Y')) ?></div>
         </div>
         <?php if (!empty($dashSub['expires_at'])): ?>
-        <a href="<?= url('account/subscription.php') ?>" class="btn btn-sm btn-outline-<?= e($dashSub['class'] === 'success' ? 'secondary' : $dashSub['class']) ?>">
+        <a href="<?= url('account/subscription.php') ?>" class="btn btn-sm btn-light">
             <i class="fa-solid fa-calendar-check me-1"></i>Plan paid to <?= e(date('d M Y', strtotime((string)$dashSub['expires_at']))) ?>
         </a>
         <?php endif; ?>
@@ -253,8 +253,9 @@ if ($isManager) {
     <div class="row g-2 mb-3">
         <div class="col-6 col-lg-3">
             <a href="<?= url('welfare/index.php') ?>" class="text-decoration-none">
-                <div class="card h-100 shadow-sm <?= $pendingWelfare ? 'border-danger' : '' ?>">
+                <div class="card decision-card accent-danger h-100 shadow-sm">
                     <div class="card-body text-center py-3">
+                        <div class="decision-icon text-danger mb-1"><i class="fa-solid fa-heart"></i></div>
                         <div class="fs-3 fw-bold <?= $pendingWelfare ? 'text-danger' : 'text-muted' ?>"><?= $pendingWelfare ?></div>
                         <div class="small text-muted">Welfare requests to review</div>
                     </div>
@@ -263,8 +264,9 @@ if ($isManager) {
         </div>
         <div class="col-6 col-lg-3">
             <a href="<?= url('users/approvals.php') ?>" class="text-decoration-none">
-                <div class="card h-100 shadow-sm <?= $pendingLoans ? 'border-warning' : '' ?>">
+                <div class="card decision-card accent-warning h-100 shadow-sm">
                     <div class="card-body text-center py-3">
+                        <div class="decision-icon text-warning mb-1"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                         <div class="fs-3 fw-bold <?= $pendingLoans ? 'text-warning' : 'text-muted' ?>"><?= $pendingLoans ?></div>
                         <div class="small text-muted">Loan applications to decide</div>
                     </div>
@@ -273,8 +275,9 @@ if ($isManager) {
         </div>
         <div class="col-6 col-lg-3">
             <a href="<?= url('users/approvals.php') ?>" class="text-decoration-none">
-                <div class="card h-100 shadow-sm <?= $pendingRegistrations ? 'border-info' : '' ?>">
+                <div class="card decision-card accent-info h-100 shadow-sm">
                     <div class="card-body text-center py-3">
+                        <div class="decision-icon text-info mb-1"><i class="fa-solid fa-user-plus"></i></div>
                         <div class="fs-3 fw-bold <?= $pendingRegistrations ? 'text-info' : 'text-muted' ?>"><?= $pendingRegistrations ?></div>
                         <div class="small text-muted">Member sign-ups to approve</div>
                     </div>
@@ -283,8 +286,9 @@ if ($isManager) {
         </div>
         <div class="col-6 col-lg-3">
             <a href="<?= url('contributions/pay.php') ?>" class="text-decoration-none">
-                <div class="card h-100 shadow-sm <?= $pendingPaymentsCount ? 'border-primary' : '' ?>">
+                <div class="card decision-card accent-primary h-100 shadow-sm">
                     <div class="card-body text-center py-3">
+                        <div class="decision-icon text-primary mb-1"><i class="fa-solid fa-mobile-screen-button"></i></div>
                         <div class="fs-3 fw-bold <?= $pendingPaymentsCount ? 'text-primary' : 'text-muted' ?>"><?= $pendingPaymentsCount ?></div>
                         <div class="small text-muted">M-Pesa payments awaiting confirmation</div>
                     </div>
@@ -341,11 +345,12 @@ if ($isManager) {
     </div>
 
     <!-- Lifetime totals -->
+    <div class="eyebrow mb-2">Since the group started</div>
     <div class="row row-cols-2 row-cols-lg-4 g-2 mb-3">
-        <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center py-3"><div class="text-muted small">Active members</div><div class="fs-4 fw-bold"><?= $totalMembers ?></div></div></div></div>
-        <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center py-3"><div class="text-muted small">Total contributions</div><div class="fs-4 fw-bold"><?= money($totalContributions) ?></div></div></div></div>
-        <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center py-3"><div class="text-muted small">Loans outstanding</div><div class="fs-4 fw-bold"><?= money($loanBalance) ?></div></div></div></div>
-        <div class="col"><div class="card shadow-sm h-100"><div class="card-body text-center py-3"><div class="text-muted small">Welfare actually paid</div><div class="fs-4 fw-bold"><?= money($welfarePaid) ?></div></div></div></div>
+        <div class="col"><div class="card stat-card bg-primary h-100"><div class="card-body py-3"><div class="icon">&#128101;</div><h6 class="mb-1 small">Active members</h6><h3 class="mb-0"><?= $totalMembers ?></h3></div></div></div>
+        <div class="col"><div class="card stat-card bg-success h-100"><div class="card-body py-3"><div class="icon">&#128176;</div><h6 class="mb-1 small">Total contributions</h6><h3 class="mb-0"><?= money($totalContributions) ?></h3></div></div></div>
+        <div class="col"><div class="card stat-card bg-warning h-100"><div class="card-body py-3"><div class="icon">&#127974;</div><h6 class="mb-1 small">Loans outstanding</h6><h3 class="mb-0"><?= money($loanBalance) ?></h3></div></div></div>
+        <div class="col"><div class="card stat-card bg-danger h-100"><div class="card-body py-3"><div class="icon">&#129309;</div><h6 class="mb-1 small">Welfare actually paid</h6><h3 class="mb-0"><?= money($welfarePaid) ?></h3></div></div></div>
     </div>
 
     <div class="card shadow-sm mb-4">
@@ -419,12 +424,12 @@ if ($monthlyDues > 0 && $monthPaid >= $monthlyDues) {
 }
 $welfareBadges = ['pending' => 'secondary', 'approved' => 'info', 'rejected' => 'danger', 'paid' => 'success'];
 ?>
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-2 mb-3">
+<div class="page-head d-flex flex-column flex-md-row justify-content-between align-items-start gap-2">
     <div>
         <h1 class="h3 fw-bold mb-1"><?= e($greeting) ?>, <?= e($user['name']) ?></h1>
-        <div class="text-muted"><?= e($chama['name'] ?? '') ?></div>
+        <div class="text-muted mb-0"><?= e($chama['name'] ?? '') ?></div>
     </div>
-    <a class="btn btn-outline-secondary" href="<?= url('members/statement.php') ?>"><i class="fa-solid fa-file-pdf me-1"></i>My statement</a>
+    <a class="btn btn-light" href="<?= url('members/statement.php') ?>"><i class="fa-solid fa-file-pdf me-1"></i>My statement</a>
 </div>
 
 <!-- Dues & payment status -->
@@ -491,8 +496,9 @@ $welfareBadges = ['pending' => 'secondary', 'approved' => 'info', 'rejected' => 
                     <div class="text-muted small">Last request: <?= e($myWelfare['request_date']) ?> &middot; <?= e($myWelfare['reason'] !== '' && $myWelfare['reason'] !== null ? $myWelfare['reason'] : 'no reason given') ?></div>
                 <?php else: ?>
                     <div class="fs-5 fw-bold text-muted">No welfare requests</div>
-                    <div class="text-muted small">Ask your treasurer how to request support</div>
+                    <div class="text-muted small">Need support? Submit a request below.</div>
                 <?php endif; ?>
+                <a class="btn btn-sm btn-outline-danger mt-2" href="<?= url('welfare/apply.php') ?>"><i class="fa-solid fa-heart me-1"></i>Request / track welfare</a>
             </div>
         </div>
     </div>

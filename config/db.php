@@ -336,6 +336,32 @@ function migrate_funds_schema(PDO $pdo): void
             KEY idx_login_ip (ip_address, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
+    // Welfare journey: second-approval fields + per-group payout threshold.
+    if (!column_exists($pdo, 'chamas', 'welfare_threshold')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN welfare_threshold DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER pay_verified_at");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'approved_by')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN approved_by INT UNSIGNED NULL AFTER approved_date");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'approved_role')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN approved_role VARCHAR(20) NOT NULL DEFAULT '' AFTER approved_by");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'needs_second')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN needs_second TINYINT(1) NOT NULL DEFAULT 0 AFTER approved_role");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'second_ok')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN second_ok TINYINT(1) NOT NULL DEFAULT 0 AFTER needs_second");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'second_by')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN second_by INT UNSIGNED NULL AFTER second_ok");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'second_role')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN second_role VARCHAR(20) NOT NULL DEFAULT '' AFTER second_by");
+    }
+    if (!column_exists($pdo, 'welfare_payouts', 'second_at')) {
+        $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN second_at DATETIME NULL AFTER second_role");
+    }
+
     // Retire the old hard-coded tier names in favour of the plans table keys.
     $pdo->exec("UPDATE chamas SET tier = 'community' WHERE tier = 'standard'");
     $pdo->exec("UPDATE chamas SET tier = 'welfare_plus' WHERE tier = 'premium'");

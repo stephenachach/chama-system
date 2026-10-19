@@ -109,6 +109,9 @@ $showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expir
                     <?php if ($showLoansNav): ?>
                         <li class="nav-item"><a class="nav-link <?= $activeLoans ? 'active' : '' ?>" href="<?= url('loans/index.php') ?>"><i class="fa-solid fa-hand-holding-dollar me-1"></i>Loans</a></li>
                         <li class="nav-item"><a class="nav-link <?= $currentFolder === 'contributions' && $currentPage === 'pay.php' ? 'active' : '' ?>" href="<?= url('contributions/pay.php') ?>"><i class="fa-solid fa-mobile-screen me-1"></i>Pay Dues</a></li>
+                        <?php if (!$isManager): ?>
+                        <li class="nav-item"><a class="nav-link <?= $activeWelfare ? 'active' : '' ?>" href="<?= url('welfare/apply.php') ?>"><i class="fa-solid fa-heart me-1"></i>My Welfare</a></li>
+                        <?php endif; ?>
                     <?php endif; ?>
                     <?php if ($isManager): ?>
                         <li class="nav-item"><a class="nav-link <?= $activeWelfare ? 'active' : '' ?>" href="<?= url('welfare/index.php') ?>"><i class="fa-solid fa-heart me-1"></i>Welfare</a></li>

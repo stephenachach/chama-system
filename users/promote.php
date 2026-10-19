@@ -3,8 +3,12 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin']);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ' . url('users/index.php'));
+    exit;
+}
 
-$id = (int)($_GET['id'] ?? 0);
+$id = (int)($_POST['id'] ?? 0);
 if (!$id) {
     flash_error('Invalid user selected.');
     header('Location: ' . url('users/index.php'));

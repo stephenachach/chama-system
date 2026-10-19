@@ -4,9 +4,13 @@ require_once __DIR__ . '/../includes/plans.php';
 require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin','treasurer']);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ' . url('users/approvals.php'));
+    exit;
+}
 
-$id = (int)($_GET['id'] ?? 0);
-$action = $_GET['action'] ?? '';
+$id = (int)($_POST['id'] ?? 0);
+$action = (string)($_POST['action'] ?? '');
 
 $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? AND chama_id = ? LIMIT 1');
 $stmt->execute([$id, current_chama_id()]);

@@ -3,7 +3,11 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/audit.php';
 require_once __DIR__ . '/../includes/sms.php';
 require_role(['admin']);
-$id = (int)($_GET['id'] ?? 0);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ' . url('loans/index.php'));
+    exit;
+}
+$id = (int)($_POST['id'] ?? 0);
 $pre = $pdo->prepare('SELECT l.*, m.full_name FROM loans l LEFT JOIN members m ON m.id = l.member_id WHERE l.id=? AND l.chama_id=?');
 $pre->execute([$id, current_chama_id()]);
 $gone = $pre->fetch();

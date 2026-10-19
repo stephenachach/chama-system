@@ -24,10 +24,17 @@ if (!$welfare) { flash_error('Welfare request not found.'); header('Location: ' 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'approve') {
-        $stmt = $pdo->prepare("UPDATE welfare_payouts SET status='approved', approved_date=? WHERE id=?");
-        $stmt->execute([date('Y-m-d'), $id]);
-        audit_log('welfare.approve', 'welfare', $id, sprintf('Approved welfare payout of KSh %s', number_format((float)$welfare['amount'], 2)));
-        flash_success('Welfare request approved.');
+        // Four-eyes rule: payouts at/above the group's threshold need a
+        // second, different officer before money can go out.
+        $threshold = (float)(current_chama()['welfare_threshold'] ?? 0);
+        $needsSecond = ($threshold > 0 && (float)$welfare['amount'] >= $threshold) ? 1 : 0;
+        $approver = current_user();
+        $stmt = $pdo->prepare("UPDATE welfare_payouts SET status='approved', approved_date=?, approved_by=?, approved_role=?, needs_second=? WHERE id=?");
+        $stmt->execute([date('Y-m-d'), (int)$approver['id'], (string)$approver['role'], $needsSecond, $id]);
+        audit_log('welfare.approve', 'welfare', $id, sprintf('Approved welfare payout of KSh %s%s', number_format((float)$welfare['amount'], 2), $needsSecond ? ' (needs second approval - at/above threshold)' : ''));
+        flash_success($needsSecond
+            ? 'Welfare request approved. It is at or above your payout threshold (' . money($threshold) . '), so a DIFFERENT officer must give a second approval before it can be paid.'
+            : 'Welfare request approved.');
     } elseif ($action === 'reject') {
         $stmt = $pdo->prepare("UPDATE welfare_payouts SET status='rejected', approved_date=NULL WHERE id=?");
         $stmt->execute([$id]);

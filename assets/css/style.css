@@ -589,9 +589,64 @@ main .row > [class*="col-"] {
     .app-nav .nav-tier2 { display: none !important; }
 }
 
-/* Authenticated app pages: light neutral background so text outside cards
-   stays readable (public landing pages keep the blue hero look). */
+/* ------------------------------------------------------------------
+   Authenticated app pages: professional decorated look.
+   Scoped to body.app-page so public landing/login pages are untouched.
+   ------------------------------------------------------------------ */
 body.app-page {
-    background: #f2f5fa !important;
+    background: linear-gradient(180deg, #e7edf8 0%, #f3f6fb 320px, #f3f6fb 100%) !important;
     color: var(--text);
+}
+
+/* Deep-blue app navbar with light text (high contrast, one palette) */
+body.app-page .app-nav {
+    background: linear-gradient(120deg, #10356e 0%, #1c56b0 60%, #2563d8 100%) !important;
+    border-bottom: 0 !important;
+    box-shadow: 0 8px 22px rgba(11, 42, 90, 0.28) !important;
+}
+body.app-page .app-nav .navbar-brand { color: #ffffff; }
+body.app-page .app-nav .nav-link { color: #cddcf7; }
+body.app-page .app-nav .nav-link.active,
+body.app-page .app-nav .nav-link:hover,
+body.app-page .app-nav .nav-link:focus { color: #ffffff; background: rgba(255, 255, 255, 0.10); border-radius: 0.5rem; }
+body.app-page .app-nav .navbar-toggler { border-color: rgba(255, 255, 255, 0.45); }
+body.app-page .app-nav .navbar-toggler-icon { filter: invert(1) grayscale(100%) brightness(200%); }
+body.app-page .app-nav .text-muted { color: #cddcf7 !important; }
+
+/* Page head band: greeting + primary actions on a blue gradient (white text) */
+.page-head {
+    background: linear-gradient(120deg, #123c7b 0%, #1f57b8 55%, #2f6fe4 100%);
+    color: #ffffff;
+    border-radius: 1rem;
+    padding: 1.35rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 14px 30px rgba(16, 53, 110, 0.25);
+}
+.page-head .text-muted, .page-head small { color: #d3e0f8 !important; }
+.page-head h1, .page-head .h3 { color: #ffffff; }
+
+/* Cards: soft headers + lift */
+body.app-page .card { box-shadow: 0 10px 24px rgba(24, 62, 120, 0.08); }
+body.app-page .card-header {
+    background: linear-gradient(180deg, #f4f8ff 0%, #edf2fc 100%);
+    color: #14345f;
+    border-bottom: 1px solid #dfe8f6;
+}
+
+/* Decision tiles: icon + accent bar */
+.decision-card { border-top: 4px solid #c9d6ea; transition: transform .12s ease; }
+.decision-card:hover { transform: translateY(-2px); }
+.decision-card.accent-danger  { border-top-color: #dc3545; }
+.decision-card.accent-warning { border-top-color: #f08c18; }
+.decision-card.accent-info    { border-top-color: #0d8ea8; }
+.decision-card.accent-primary { border-top-color: #2563d8; }
+.decision-card .decision-icon { font-size: 1.15rem; opacity: .85; }
+
+/* Section eyebrow labels */
+.eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #6a7c99;
 }

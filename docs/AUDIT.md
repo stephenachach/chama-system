@@ -26,16 +26,20 @@ Status legend: **FIXED** = implemented and verified in this release (v7) · **OP
 | S-4 | `config/sms-secrets.php` not ignored by git. | **FIXED** (`.gitignore`). |
 | S-5 | Default callback token / blank DB credentials usable in production. | **FIXED** in code (default token rejected when `environment=production`); operational steps in `docs/PRODUCTION_SETUP.md`. |
 
-## P1 — Product/UX (planned, **OPEN**)
+## P1 — Product/UX
 
-1. Welfare self-service journey for members (submit → status timeline → payout), with sensitive case details restricted to committee; configurable extra approval above a payout threshold.
-2. Public site: split "Start a group" vs "Join a group" paths clearly, FAQs, privacy/security summary, product preview, how-it-works, support contact.
-3. Remove remaining "Live update"-style sample bars/figures anywhere they persist.
-4. Committee dashboard rework: lead with this month's contributions, pending welfare, approvals queue, payments awaiting confirmation, members needing follow-up; obvious primary actions (Record payment / Review welfare / Invite member).
-5. Member home screen: dues + due date, payment status, welfare status, loan status, statement link.
-6. "Welfare Paid" stat must count only actually-paid cases (verify current logic while doing #1).
-7. Shorter, phone-friendly member registration; email optional if password reset stays secure (phone-based reset or committee reset).
-8. Dense tables → mobile card layouts; tappable button sizes; one restrained high-contrast palette; plain-language labels; KES always visible.
+1. **FIXED (v10).** Welfare self-service journey: members submit requests (`welfare/apply.php`) and track status; sensitive case details committee-only; configurable payout threshold — payouts at/above it need a second approval by a *different* officer (four-eyes) before Mark Paid unlocks.
+2. **OPEN.** Public site: split "Start a group" vs "Join a group" paths clearly, FAQs, product preview, how-it-works, support contact (privacy/security summary page shipped in v7).
+3. **OPEN.** Remove remaining "Live update"-style sample bars/figures anywhere they persist.
+4. **FIXED (v8).** Committee dashboard rework: this month's contributions vs target, decision queue (welfare/loans/sign-ups/payments awaiting confirmation), follow-up list with call buttons, three primary actions.
+5. **FIXED (v9).** Member home screen: dues + due date, part/full/unpaid status, loan status, welfare status, statement, Pay with M-Pesa.
+6. **FIXED (v8).** "Welfare Paid" counts only status=paid.
+7. **OPEN.** Shorter, phone-friendly member registration; email optional if password reset stays secure.
+8. **PARTIAL (v10).** Visual polish: light readable app background, deep-blue navbar + page-head bands, accent decision tiles, coloured totals, one restrained palette on app pages. Remaining: dense tables → mobile card layouts across list pages; registration form shortening (with #7).
+
+### Post-v7 defect found and fixed in v10
+
+The v7 automated POST-conversion of destructive actions updated the UI (forms) but **not** the eight target scripts (deletes, mark-paid, promote, approvals) — they kept reading `$_GET['id']`, so those buttons did nothing and GET-deletes still worked. All eight scripts are now POST-gated with CSRF, re-tested (GET delete refused and row survives; POST delete works).
 
 ## P2 — Later
 
