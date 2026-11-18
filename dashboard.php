@@ -429,7 +429,7 @@ $welfareBadges = ['pending' => 'secondary', 'approved' => 'info', 'rejected' => 
         <h1 class="h3 fw-bold mb-1"><?= e($greeting) ?>, <?= e($user['name']) ?></h1>
         <div class="text-muted mb-0"><?= e($chama['name'] ?? '') ?></div>
     </div>
-    <a class="btn btn-light" href="<?= url('members/statement.php') ?>"><i class="fa-solid fa-file-pdf me-1"></i>My statement</a>
+    <a class="btn btn-light" href="<?= url('members/statement.php') ?>"><i class="fa-solid fa-file-lines me-1"></i>My statement</a>
 </div>
 
 <!-- Dues & payment status -->

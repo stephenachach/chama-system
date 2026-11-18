@@ -22,9 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = null;   // skip verification entirely
     }
 
+    $identifier = trim($email);
     $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
-    $stmt->execute([$email]);
+    $stmt->execute([$identifier]);
     $user = $stmt->fetch();
+    if (!$user && preg_match('/^[0-9+\- ]{7,20}$/', $identifier)) {
+        // Fallback: look the member up by phone number (for accounts with no email).
+        $stmt = $pdo->prepare('SELECT u.* FROM users u JOIN members m ON m.id = u.member_id WHERE m.phone = ? LIMIT 1');
+        $stmt->execute([preg_replace('/[\- ]/', '', $identifier)]);
+        $user = $stmt->fetch();
+    }
 
     if ($user && password_verify($password, $user['password'])) {
         $accountStatus = $user['account_status'] ?? 'approved';
@@ -91,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 $page_title = 'Login';
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -124,6 +132,8 @@ $page_title = 'Login';
                     </div>
                     <div class="col-12 d-grid">
                         <button class="btn btn-primary btn-lg">Login securely</button>
+                        <p class="text-center small text-muted mt-3 mb-1">You can log in with your email or your phone number.</p>
+                        <p class="text-center small text-muted mb-0">Forgot your password? Ask your group&rsquo;s treasurer or admin to reset it.</p>
                     </div>
                 </form>
                 <div class="mt-4 text-center text-muted small">

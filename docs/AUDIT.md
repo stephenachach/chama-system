@@ -41,7 +41,11 @@ Status legend: **FIXED** = implemented and verified in this release (v7) · **OP
 
 The v7 automated POST-conversion of destructive actions updated the UI (forms) but **not** the eight target scripts (deletes, mark-paid, promote, approvals) — they kept reading `$_GET['id']`, so those buttons did nothing and GET-deletes still worked. All eight scripts are now POST-gated with CSRF, re-tested (GET delete refused and row survives; POST delete works).
 
+### Honesty correction (Batch E)
+Statements are a **printable one-page HTML view** (browser "Save as PDF" works), not server-generated PDFs. All "PDF" wording in buttons/labels/copy has been corrected accordingly. True server-side PDF export is listed below.
+
 ## P2 — Later
+- Server-side PDF statement generation (bundled library) instead of print-to-PDF.
 
 1. Kiswahili language plan (string externalisation first).
 2. Versioned migrations (currently schema changes auto-apply on request via `migrate_funds_schema()` in `config/db.php` — acceptable for a single non-technical operator, but flagged as a risk; snapshot the DB before upgrades).

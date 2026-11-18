@@ -30,14 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
     $full_name = trim($_POST['full_name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $email = trim($_POST['email'] ?? '');
-    $address = trim($_POST['address'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-    if (!$full_name || !$phone || !$email || !$password) {
-        $error = 'Full name, phone, email and password are required.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Please enter a valid email address.';
+    if (!$full_name || !$phone || !$password) {
+        $error = 'Full name, phone and password are required.';
+    } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address, or leave it blank to log in with your phone number.';
     } elseif (strlen($password) < 6) {
         $error = 'Password must be at least 6 characters long.';
     } elseif ($password !== $confirm_password) {
@@ -60,11 +59,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
 
     if (!$error) {
         try {
-            $check = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
-            $check->execute([$email]);
+            $emailTaken = false;
+            if ($email !== '') {
+                $check = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+                $check->execute([$email]);
+                $emailTaken = (bool)$check->fetch();
+            }
+            // One account per phone within a group.
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM users u JOIN members m ON m.id = u.member_id WHERE m.chama_id = ? AND m.phone = ?");
+            $stmt->execute([(int)$chama['id'], $phone]);
+            $phoneTaken = ((int)$stmt->fetchColumn() > 0);
 
-            if ($check->fetch()) {
+            if ($emailTaken) {
                 $error = 'That email address is already registered.';
+            } elseif ($phoneTaken) {
+                $error = 'That phone number is already registered with this group.';
             } else {
                 $pdo->beginTransaction();
 
@@ -78,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 }
 
                 $stmt = $pdo->prepare('INSERT INTO members (chama_id, member_no, full_name, phone, email, address, join_date, status) VALUES (?,?,?,?,?,?,?,?)');
-                $stmt->execute([(int)$chama['id'], $member_no, $full_name, $phone, $email, $address, date('Y-m-d'), 'inactive']);
+                $stmt->execute([(int)$chama['id'], $member_no, $full_name, $phone, $email, '', date('Y-m-d'), 'inactive']);
                 $member_id = $pdo->lastInsertId();
 
                 $stmt = $pdo->prepare('INSERT INTO users (chama_id, member_id, name, email, password, role, account_status) VALUES (?,?,?,?,?,?,?)');
@@ -86,7 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     (int)$chama['id'],
                     $member_id,
                     $full_name,
-                    $email,
+                    // No email? Store a unique placeholder so login-by-phone works
+                    // and the UNIQUE(email) index stays happy. Never matches real mail.
+                    $email !== '' ? $email : ('phone-' . $member_id . '@members.local'),
                     password_hash($password, PASSWORD_DEFAULT),
                     'member',
                     'pending'
@@ -158,8 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     <input class="form-control" name="phone" value="<?= e($_POST['phone'] ?? '') ?>" required>
                 </div>
                 <div class="col-md-12">
-                    <label class="form-label required">Email Address</label>
-                    <input type="email" class="form-control" name="email" value="<?= e($_POST['email'] ?? '') ?>" required>
+                    <label class="form-label">Email Address <span class="text-muted fw-normal">(optional)</span></label>
+                    <input type="email" class="form-control" name="email" value="<?= e($_POST['email'] ?? '') ?>">
+                    <div class="form-text">No email? Leave it blank - you'll log in with your phone number instead.</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label required">Password</label>
@@ -168,10 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 <div class="col-md-6">
                     <label class="form-label required">Confirm Password</label>
                     <input type="password" class="form-control" name="confirm_password" minlength="6" required>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Address</label>
-                    <textarea class="form-control" name="address" rows="2"><?= e($_POST['address'] ?? '') ?></textarea>
                 </div>
                 <div class="col-12 d-grid gap-2">
                     <button class="btn btn-success" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Send request to join</button>

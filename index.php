@@ -144,7 +144,7 @@ try {
             ['fa-vault', 'Your money stays yours', 'Group savings never pass through our account and we take no percentage of contributions, loans or welfare. The only money you pay us is the subscription.'],
             ['fa-hand-holding-dollar', 'Loans that manage themselves', 'Balances fall with every repayment, overpayments are impossible, and a settled loan closes itself. Large welfare payouts can require two officers\' approval.'],
             ['fa-comment-sms', 'Honest SMS reminders', 'Automatic reminders to whoever has not paid, from prepaid SMS credit you control - you always know the cost per message and what is left.'],
-            ['fa-file-pdf', 'Statements anyone can trust', 'One click gives a member a branded PDF: contributions, repayments, loan position and totals - ready for the AGM.'],
+            ['fa-file-lines', 'Statements anyone can trust', 'One click gives any member a clear one-page statement - contributions, repayments, loan position and totals. Print it or save as PDF for the AGM.'],
             ['fa-shield-halved', 'An audit trail behind everything', 'Every shilling move is logged with who did it and when. Treasurers sleep; disputes end quickly.'],
         ];
         foreach ($features as $i => [$icon, $title, $body]): ?>

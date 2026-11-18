@@ -58,7 +58,7 @@ $pageTitle = 'Privacy & security - ' . APP_NAME;
     <div class="card mb-3 shadow-sm">
         <div class="card-body">
             <h2 class="h5 fw-bold"><i class="fa-solid fa-file-arrow-down text-primary me-2"></i>Your records are never held hostage</h2>
-            <p class="mb-0">If a group's subscription expires, the group switches to <strong>read-only</strong>: members and committee can still log in, view everything and download statements and CSV exports. Editing resumes on renewal. On leaving the platform, a group can export its full history.</p>
+            <p class="mb-0">If a group's subscription expires, the group switches to <strong>read-only</strong>: members and committee can still log in, view everything and download statements (print or save as PDF) and CSV exports. Editing resumes on renewal. On leaving the platform, a group can export its full history.</p>
         </div>
     </div>
 

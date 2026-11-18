@@ -32,14 +32,14 @@ if ($q !== '') {
             <div class="col-md-2 d-grid"><button class="btn btn-outline-primary">Search</button></div>
         </form>
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-cards table-hover align-middle">
                 <thead><tr><th>Member No</th><th>Name</th><th>Phone</th><th>Email</th><th>Join Date</th><th>Status</th><th width="160">Actions</th></tr></thead>
                 <tbody>
                 <?php foreach ($members as $m): ?>
                     <tr>
-                        <td><?= e($m['member_no']) ?></td><td><?= e($m['full_name']) ?></td><td><?= e($m['phone']) ?></td><td><?= e($m['email']) ?></td><td><?= e($m['join_date']) ?></td>
-                        <td><span class="badge bg-<?= $m['status'] === 'active' ? 'success' : 'secondary' ?>"><?= e(ucfirst($m['status'])) ?></span></td>
-                        <td><a class="btn btn-sm btn-outline-success" title="PDF statement" href="<?= url('members/statement.php?id=' . $m['id']) ?>"><i class="fa-solid fa-file-pdf"></i> Statement</a> <a class="btn btn-sm btn-outline-primary" href="<?= url('members/edit.php?id=' . $m['id']) ?>">Edit</a> <form method="post" action="<?= url('members/delete.php') ?>" class="d-inline" onsubmit="return confirm('Delete this member?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$m['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
+                        <td data-label="Member No"><?= e($m['member_no']) ?></td><td data-label="Name"><?= e($m['full_name']) ?></td><td data-label="Phone"><a href="tel:<?= e(preg_replace('/[^0-9+]/', '', (string)$m['phone'])) ?>" class="text-decoration-none"><?= e($m['phone']) ?></a></td><td data-label="Email"><?= e($m['email'] ?? '') ?></td><td data-label="Joined"><?= e($m['join_date']) ?></td>
+                        <td data-label="Status"><span class="badge bg-<?= $m['status'] === 'active' ? 'success' : 'secondary' ?>"><?= e(ucfirst($m['status'])) ?></span></td>
+                        <td class="actions-cell"><a class="btn btn-sm btn-outline-success" title="Open statement (print or save as PDF)" href="<?= url('members/statement.php?id=' . $m['id']) ?>"><i class="fa-solid fa-file-lines"></i> Statement</a> <a class="btn btn-sm btn-outline-primary" href="<?= url('members/edit.php?id=' . $m['id']) ?>">Edit</a> <form method="post" action="<?= url('members/delete.php') ?>" class="d-inline" onsubmit="return confirm('Delete this member?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$m['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (!$members): ?><tr><td colspan="7" class="text-center text-muted">No members found.</td></tr><?php endif; ?>

@@ -49,15 +49,15 @@ $loans = $stmt->fetchAll();
             </div>
         </form>
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-cards table-hover align-middle">
                 <thead><tr><th>Member</th><th>Applied</th><th>Principal</th><th>Interest</th><th>Total</th><th>Repaid</th><th>Balance</th><th>Status</th><th>Eligibility</th><th width="230">Actions</th></tr></thead>
                 <tbody>
                 <?php foreach ($loans as $l): ?>
                     <tr>
-                        <td><?= e($l['member_no'].' - '.$l['full_name']) ?><br><small class="text-muted"><?= e($l['purpose']) ?></small></td><td><?= e($l['application_date']) ?></td><td><?= money($l['amount']) ?></td><td><?= e($l['interest_rate']) ?>%</td><td><?= money($l['total_payable']) ?></td><td><?= money($l['repaid']) ?></td><td><?= money($l['balance']) ?></td>
-                        <td><span class="badge bg-<?= ['pending'=>'secondary','approved'=>'success','rejected'=>'danger','paid'=>'primary'][$l['status']] ?>"><?= e(ucfirst($l['status'])) ?></span></td>
-                        <td><?= loanEligibilityBadge($l) ?></td>
-                        <td>
+                        <td data-label="Member"><?= e($l['member_no'].' - '.$l['full_name']) ?><br><small class="text-muted"><?= e($l['purpose']) ?></small></td><td data-label="Applied"><?= e($l['application_date']) ?></td><td data-label="Principal"><?= money($l['amount']) ?></td><td data-label="Interest"><?= e($l['interest_rate']) ?>%</td><td data-label="Total"><?= money($l['total_payable']) ?></td><td data-label="Repaid"><?= money($l['repaid']) ?></td><td data-label="Balance"><strong><?= money($l['balance']) ?></strong></td>
+                        <td data-label="Status"><span class="badge bg-<?= ['pending'=>'secondary','approved'=>'success','rejected'=>'danger','paid'=>'primary'][$l['status']] ?>"><?= e(ucfirst($l['status'])) ?></span></td>
+                        <td data-label="Eligibility"><?= loanEligibilityBadge($l) ?></td>
+                        <td class="actions-cell">
                             <?php if (!$isMember): ?>
                                 <?php if ($l['status']==='pending'): ?><a class="btn btn-sm btn-outline-success" href="<?= url('users/approvals.php?loan_id='.$l['id']) ?>">Approve/Reject</a><?php endif; ?>
                                 <?php if ($l['status']==='approved'): ?><a class="btn btn-sm btn-outline-primary" href="<?= url('loans/repayment.php?id='.$l['id']) ?>">Record</a><?php endif; ?>

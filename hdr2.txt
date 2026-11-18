@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Host: 127.0.0.1:8080
+Date: Wed, 18 Nov 2026 20:56:19 GMT
+Connection: close
+X-Powered-By: PHP/8.4.27
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Content-type: text/html; charset=UTF-8
+

@@ -650,3 +650,64 @@ body.app-page .card-header {
     font-weight: 700;
     color: #6a7c99;
 }
+
+/* ------------------------------------------------------------------
+   Batch E: dense tables become tappable cards on phones (app pages).
+   Add class "table-cards" to a table and data-label="..." to its cells.
+   ------------------------------------------------------------------ */
+body.app-page .table-cards td { vertical-align: middle; }
+
+@media (max-width: 640px) {
+    body.app-page .table-cards thead { display: none; }
+    body.app-page .table-cards, body.app-page .table-cards tbody { display: block; }
+    body.app-page .table-cards tr {
+        display: block;
+        background: #ffffff;
+        border: 1px solid #e2e8f3;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(24, 62, 120, 0.06);
+        padding: 0.35rem 0.6rem;
+        margin-bottom: 0.7rem;
+    }
+    body.app-page .table-cards td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+        border: 0;
+        padding: 0.45rem 0.25rem;
+        text-align: right !important;
+        white-space: normal;
+    }
+    body.app-page .table-cards td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 0.78rem;
+        color: #5b6b84;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        text-align: left;
+        flex-shrink: 0;
+        padding-top: 0.15rem;
+    }
+    /* Action cells: no label, full width, buttons wrap */
+    body.app-page .table-cards td.actions-cell {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        justify-content: flex-end;
+        border-top: 1px dashed #e2e8f3;
+        margin-top: 0.2rem;
+    }
+    body.app-page .table-cards td.actions-cell::before { content: none; }
+    /* Bigger tap targets everywhere on phones */
+    body.app-page .btn-sm { min-height: 40px; padding: 0.45rem 0.75rem; }
+    body.app-page .form-control, body.app-page .form-select { min-height: 44px; }
+    body.app-page .btn { min-height: 44px; }
+}
+
+/* Consistent visible focus ring (accessibility, whole app) */
+body.app-page :is(a, button, input, select, textarea):focus-visible {
+    outline: 3px solid rgba(37, 99, 216, 0.55);
+    outline-offset: 1px;
+}

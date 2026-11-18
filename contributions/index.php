@@ -76,11 +76,11 @@ $pendingPayments = $pendingStmt->fetchAll();
         </form>
         <div class="alert alert-success"><strong>Total Contributions:</strong> <?= money($total) ?></div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-cards table-hover align-middle">
                 <thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Reference</th><th>Notes</th><th>Amount</th><th width="90">Action</th></tr></thead>
                 <tbody>
                 <?php foreach ($contributions as $c): ?>
-                    <tr><td><?= e($c['contribution_date']) ?></td><td><?= e($c['member_no'].' - '.$c['full_name']) ?></td><td><?= e(ucfirst($c['type'])) ?><?php if ($c['type'] === 'mpesa'): ?> <span class="badge bg-success">M-Pesa</span><?php endif; ?></td><td><code><?= e($c['reference']) ?></code></td><td><?= e($c['notes']) ?></td><td><?= money($c['amount']) ?></td><td><form method="post" action="<?= url('contributions/delete.php') ?>" class="d-inline" onsubmit="return confirm('Delete this contribution?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$c['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td></tr>
+                    <tr><td data-label="Date"><?= e($c['contribution_date']) ?></td><td data-label="Member"><?= e($c['member_no'].' - '.$c['full_name']) ?></td><td data-label="Type"><?= e(ucfirst($c['type'])) ?><?php if ($c['type'] === 'mpesa'): ?> <span class="badge bg-success">M-Pesa</span><?php endif; ?></td><td data-label="Reference"><code><?= e($c['reference']) ?></code></td><td data-label="Notes"><?= e($c['notes']) ?></td><td data-label="Amount"><strong><?= money($c['amount']) ?></strong></td><td class="actions-cell"><form method="post" action="<?= url('contributions/delete.php') ?>" class="d-inline" onsubmit="return confirm('Delete this contribution?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$c['id'] ?>"><button class="btn btn-sm btn-outline-danger">Delete</button></form></td></tr>
                 <?php endforeach; ?>
                 <?php if (!$contributions): ?><tr><td colspan="7" class="text-center text-muted">No contributions found.</td></tr><?php endif; ?>
                 </tbody>
