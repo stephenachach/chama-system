@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Member Registration - <?= e(APP_NAME) ?></title>
+    <title>Join your group - <?= e(APP_NAME) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="<?= url('assets/css/style.css') ?>?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>" rel="stylesheet">
 </head>
@@ -117,12 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
 <div class="container min-vh-100 d-flex align-items-center justify-content-center py-4">
     <div class="card shadow-lg" style="max-width: 760px; width: 100%;">
         <div class="card-body p-4">
-            <h3 class="fw-bold text-center mb-2">Member Registration</h3>
+            <h3 class="fw-bold text-center mb-2"><i class="fa-solid fa-user-plus text-success me-2"></i>Join your group</h3>
             <?php if ($selectedChama): ?>
                 <p class="text-center mb-1"><span class="badge bg-primary fs-6"><?= e($selectedChama['name']) ?></span></p>
-                <p class="text-muted text-center mb-4">You are registering with this group. Your account will be pending until approved by its admin or treasurer.</p>
+                <p class="text-muted text-center mb-4">You are joining this group. Your committee approves your account before you can log in. Members never pay us anything - your group covers the subscription.</p>
             <?php else: ?>
-                <p class="text-muted text-center mb-4">Choose your group, then register as a member. Your account will be pending until approved by admin or treasurer.</p>
+                <p class="text-muted text-center mb-2">Best way in: use the <strong>registration link your group shared</strong> (WhatsApp or SMS). Otherwise choose your group below.</p>
+                <p class="text-muted text-center mb-4">Your committee approves your account before you can log in. Members never pay us anything.</p>
+                <p class="text-center small mb-4"><a href="<?= url('start.php') ?>" class="text-decoration-none">Want to start a NEW group instead? Start here &rarr;</a></p>
             <?php endif; ?>
 
             <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
@@ -172,8 +174,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                     <textarea class="form-control" name="address" rows="2"><?= e($_POST['address'] ?? '') ?></textarea>
                 </div>
                 <div class="col-12 d-grid gap-2">
-                    <button class="btn btn-primary" type="submit">Submit Registration</button>
-                    <a class="btn btn-outline-secondary" href="<?= url('index.php') ?>">Back to Login</a>
+                    <button class="btn btn-success" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Send request to join</button>
+                    <a class="btn btn-outline-secondary" href="<?= url('index.php') ?>">Back to home</a>
                 </div>
             </form>
             <?php endif; ?>

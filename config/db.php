@@ -1,11 +1,12 @@
 <?php
 require_once __DIR__ . '/app.php';
 
-// XAMPP default settings. Edit if your MySQL username/password is different.
-$host = 'localhost';
-$dbname = 'chama_system_db';
-$username = 'root';
-$password = '';
+// Credentials live in config/db-credentials.php (XAMPP defaults shipped).
+$__dbCreds = require __DIR__ . '/db-credentials.php';
+$host = (string)$__dbCreds['host'];
+$dbname = (string)$__dbCreds['dbname'];
+$username = (string)$__dbCreds['username'];
+$password = (string)$__dbCreds['password'];
 
 try {
     $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $username, $password, [
@@ -360,6 +361,17 @@ function migrate_funds_schema(PDO $pdo): void
     }
     if (!column_exists($pdo, 'welfare_payouts', 'second_at')) {
         $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN second_at DATETIME NULL AFTER second_role");
+    }
+
+    // Platform settings (support contacts shown on the public site).
+    $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
+        setting_key VARCHAR(60) NOT NULL,
+        setting_value VARCHAR(255) NOT NULL DEFAULT '',
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (setting_key)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    foreach (['support_email', 'support_phone', 'support_whatsapp'] as $k) {
+        $pdo->prepare('INSERT IGNORE INTO settings (setting_key, setting_value) VALUES (?, \'\')')->execute([$k]);
     }
 
     // Retire the old hard-coded tier names in favour of the plans table keys.

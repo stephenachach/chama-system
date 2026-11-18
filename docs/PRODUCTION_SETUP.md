@@ -18,7 +18,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP ON chama_prod.*
 
 Import the schema: `mysql -u chama_app -p chama_prod < database.sql`
 
-Then edit `config/db.php` (host, dbname, user, password). Strong secrets everywhere; do not commit real credentials to git.
+Then edit `config/db-credentials.php` (host, dbname, user, password). Strong secrets everywhere; do not commit real credentials to git.
 
 ## 3. M-Pesa (Daraja)
 

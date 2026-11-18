@@ -101,6 +101,7 @@ $showSubAlert = !$isSuper && $subStatus && in_array($subStatus['state'], ['expir
                     <li class="nav-item"><a class="nav-link <?= $activeChamas ? 'active' : '' ?>" href="<?= url('chamas/index.php') ?>"><i class="fa-solid fa-people-group me-1"></i>Chamas</a></li>
                     <li class="nav-item"><a class="nav-link <?= $activeBilling ? 'active' : '' ?>" href="<?= url('billing/index.php') ?>"><i class="fa-solid fa-money-bill-wave me-1"></i>Billing</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= url('mpesa/logs.php') ?>"><i class="fa-solid fa-list-check me-1"></i>M-Pesa Logs</a></li>
+                    <li class="nav-item"><a class="nav-link <?= $currentPage === 'settings.php' ? 'active' : '' ?>" href="<?= url('settings.php') ?>"><i class="fa-solid fa-sliders me-1"></i>Settings</a></li>
                 <?php else: ?>
                     <?php if ($isManager): ?>
                         <li class="nav-item"><a class="nav-link <?= $activeMembers ? 'active' : '' ?>" href="<?= url('members/index.php') ?>"><i class="fa-solid fa-users me-1"></i>Members</a></li>

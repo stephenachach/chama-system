@@ -151,6 +151,21 @@ CREATE TABLE welfare_payouts (
     KEY idx_welfare_chama (chama_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Platform settings (key/value). Editable by the superadmin; used by the
+-- public site (support contacts) and future configuration needs.
+DROP TABLE IF EXISTS settings;
+CREATE TABLE settings (
+    setting_key VARCHAR(60) NOT NULL,
+    setting_value VARCHAR(255) NOT NULL DEFAULT '',
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO settings (setting_key, setting_value) VALUES
+    ('support_email', ''),
+    ('support_phone', ''),
+    ('support_whatsapp', '');
+
 -- Subscription billing (Phase 2). One row per fee payment or trial grant.
 CREATE TABLE subscription_payments (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
