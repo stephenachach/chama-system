@@ -1,6 +1,7 @@
 # M-Pesa credentials - NEVER commit these
 config/mpesa-secrets.php
 config/sms-secrets.php
+config/email-secrets.php
 
 # Runtime cache (OAuth tokens, maintenance locks)
 storage/*
@@ -10,3 +11,5 @@ storage/*
 .DS_Store
 Thumbs.db
 *.log
+chama-system-v*/
+chama-system-phase*/
