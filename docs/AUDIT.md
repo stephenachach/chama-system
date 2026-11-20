@@ -57,3 +57,32 @@ Statements are a **printable one-page HTML view** (browser "Save as PDF" works),
 - No regulatory, payments-licensing or ODPC compliance claims are made anywhere; see `docs/PRIVACY.md` — engage a Kenyan-qualified professional.
 - Pricing is treated as a launch **hypothesis**: every number is editable in Superadmin → Billing → Plans; no pricing is hard-coded in logic.
 - M-Pesa live group collections remain **off** until an operator marks a group route verified — by design.
+
+## Batch F - Email & WhatsApp notifications, human landing copy, phone-fit finish (v14)
+**What changed**
+- New multi-channel notifier `includes/notifications.php`: email driver (Brevo-style API or PHP mail(), falls back to honest *simulated* logs when unconfigured) plus SMS through the existing pipeline. Every attempt lands in `sms_logs` tagged by `channel` (new column, migrated in db.php). WhatsApp = native `wa.me` click-to-send buttons pre-filled with the reminder text (no third-party dependency).
+- Payment receipts (`sms_payment_receipt`) now reach members on email automatically when an address exists, alongside SMS. Monthly dues reminders (cron/reminders.php) do the same. The committee dashboard's "needs follow-up" list gained per-member **Call + WhatsApp** quick actions.
+- SMS log screen shows a Channel badge (SMS/EMAIL/WHATSAPP) so nothing is hidden.
+- Landing page rewritten in a warm, plain Kenyan voice: shorter hero ("Run your chama without the WhatsApp chaos"), trimmed feature blurbs and FAQs, most em-dashes removed, honest CTA ("The first N days are free. No card, no contract.").
+- Remaining desktop tables converted to mobile cards: `users/approvals.php` (registrations + loans) and `users/index.php`, with tel: links and 44px action targets. Public pages got small-screen spacing, centered footer, accordion and navbar touch fixes.
+
+**Honesty notes**
+- Emails are only truly sent once `config/email-secrets.php` is created (template provided, git-ignored). Until then every email is logged as *Simulated* exactly like SMS does today. Nothing pretends otherwise.
+- WhatsApp automation via provider APIs is deliberately NOT built yet: it requires paid approved templates and business verification. Tap-to-send works immediately at zero cost and keeps a human in the loop, which suits welfare follow-ups.
+
+**Not tested / unchanged**
+- Real Brevo/SMTP delivery (no keys in sandbox). Live Daraja STK remains untested end-to-end. Loan overpayment guard and full IDOR sweep still outstanding as previously noted.
+
+## Hardening mini-pass (pre-v15)
+- Removed tracked junk file `hdr2.txt`.
+- Added `.htaccess` guards: root blocks direct hits on `database.sql`, logs/backups; directory listing disabled. Internal folders (`config/`, `includes/`, `cron/`, `storage/`, `docs/`, `audit/`, `account/`) now refuse all HTTP access so secrets, helpers and scripts cannot be downloaded even by URL guessing. Works out of the box on XAMPP/Apache with default `AllowOverride All`.
+
+
+## Batch G - Loan limits and two-officer approvals (v15)
+**What changed**
+- Groups can now configure loan policy in Settings: a savings multiplier (default 3x), an optional hard ceiling in KSh, and a threshold above which loans must be approved by two different officers. Caps are enforced server-side at application AND approval; officers can record an audited override when committees decide exceptions.
+- Loans table gained approval tracking columns (approved_by, needs_second, second_ok/by/at). The approve screen shows the live group cap, warns clearly on violations, and walks officers through the four-eyes flow with honest button labels ("Record first approval", "Give second approval & approve"). Existing welfare payout dual-approval stays unchanged.
+- All limits are per-chama defaults-friendly: multiplier 0 switches caps off, threshold 0 keeps single approval, so existing groups see no behaviour change until they opt in.
+
+**Not tested / honest notes**
+- Live M-Pesa STK and real SMS/email delivery remain sandbox-untested. Two-officer UI happy paths were exercised manually plus unit checks on the cap maths; a formal cross-role permission sweep is still outstanding as previously noted.

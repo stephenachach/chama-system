@@ -67,14 +67,15 @@ if (!function_exists('sms_log_entry')) {
     {
         global $pdo;
         $stmt = $pdo->prepare(
-            'INSERT INTO sms_logs (chama_id, member_id, phone, purpose, message, provider, status, provider_message_id, error, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO sms_logs (chama_id, member_id, phone, purpose, channel, message, provider, status, provider_message_id, error, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $args['chama_id'] ?? null,
             $args['member_id'] ?? null,
             (string)($args['phone'] ?? ''),
             (string)($args['purpose'] ?? 'notice'),
+            (string)($args['channel'] ?? 'sms'),
             str_cut((string)($args['message'] ?? ''), 480),
             $provider,
             $status,
@@ -194,13 +195,23 @@ if (!function_exists('sms_payment_receipt')) {
             $extra,
             $chama['name'] ?? 'your chama'
         );
-        sms_send([
-            'chama_id'  => $chama['id'] ?? null,
-            'member_id' => $member['id'] ?? null,
-            'phone'     => $phone,
-            'purpose'   => 'receipt',
-            'message'   => str_cut($msg, 480),
-        ]);
+        // Multi-channel: email goes automatically if the member has an
+        // address; SMS follows the usual simulation/credit rules.
+        require_once __DIR__ . '/notifications.php';
+        notify_member(
+            [
+                'id'       => $member['id'] ?? null,
+                'chama_id' => $chama['id'] ?? null,
+                'full_name'=> $name,
+                'phone'    => $phone,
+                'email'    => $member['email'] ?? '',
+            ],
+            [
+                'purpose' => 'receipt',
+                'subject' => sprintf('Payment received - %s', $chama['name'] ?? 'your chama'),
+                'message' => str_cut($msg, 480),
+            ]
+        );
     }
 }
 

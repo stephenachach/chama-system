@@ -141,3 +141,41 @@ function loanEligibilityBadge(array $loan): string
     $info = loanEligibility($loan);
     return '<span class="badge bg-' . e($info['class']) . '">' . e($info['label']) . '</span>';
 }
+
+
+/**
+ * Group-configurable loan limits.
+ * allowed = member lifetime ordinary contributions x multiplier, capped by optional hard ceiling.
+ * Multiplier 0 means the group turned caps off. Welfare contributions are excluded on purpose.
+ */
+if (!function_exists('loan_limit_for_member')) {
+    function loan_limit_for_member(array $chama, int $memberId): array
+    {
+        global $pdo;
+        $multiplier = (float)($chama['loan_cap_multiplier'] ?? 3);
+        $ceiling = isset($chama['loan_cap_max']) && $chama['loan_cap_max'] !== null ? (float)$chama['loan_cap_max'] : 0.0;
+        $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM contributions WHERE chama_id = ? AND member_id = ? AND type IN ('monthly','registration','other')");
+        $stmt->execute([(int)($chama['id'] ?? 0), $memberId]);
+        $savings = (float)$stmt->fetchColumn();
+        $allowed = $multiplier > 0 ? $savings * $multiplier : INF;
+        if ($ceiling > 0) $allowed = min($allowed, $ceiling);
+        return ['multiplier'=>$multiplier,'ceiling'=>$ceiling,'savings'=>$savings,'allowed'=>$allowed];
+    }
+}
+
+if (!function_exists('loan_limit_violation')) {
+    /** Returns a friendly refusal message when amount exceeds the group cap, otherwise null. */
+    function loan_limit_violation(array $chama, int $memberId, float $amount): ?string
+    {
+        $cap = loan_limit_for_member($chama, $memberId);
+        if ($cap['multiplier'] <= 0) return null;
+        if ($amount <= $cap['allowed'] + 0.005) return null;
+        if ($cap['ceiling'] > 0 && $amount > $cap['ceiling']) {
+            $reason = sprintf('the group ceiling of KSh %s', number_format($cap['ceiling'], 2));
+        } else {
+            $m = rtrim(rtrim(number_format($cap['multiplier'], 2), '0'), '.');
+            $reason = sprintf('%sx savings (KSh %s saved)', $m, number_format($cap['savings'], 2));
+        }
+        return sprintf('This request is above %s. Maximum allowed right now is KSh %s. Officers can override with a recorded reason if the committee agrees.', $reason, number_format($cap['allowed'], 2));
+    }
+}

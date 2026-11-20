@@ -42,6 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sms_enabled = ((int)($_POST['sms_enabled'] ?? 0)) === 1 ? 1 : 0;
     $sms_receipts = ((int)($_POST['sms_receipts'] ?? 1)) === 0 ? 0 : 1;
     $sms_reminder_day = max(1, min(28, (int)($_POST['sms_reminder_day'] ?? 5)));
+    $loan_cap_multiplier = max(0, (float)($_POST['loan_cap_multiplier'] ?? 3));
+    $loan_cap_max_raw = trim((string)($_POST['loan_cap_max'] ?? ''));
+    $loan_cap_max = $loan_cap_max_raw === '' ? null : max(0, (float)$loan_cap_max_raw);
+    $loan_approval_threshold = max(0, (float)($_POST['loan_approval_threshold'] ?? 0));
 
     if ($name === '' || !in_array($plan, ['free', 'pro'], true)) {
         flash_error('Chama name is required and plan must be valid.');
@@ -53,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $expiry = date('Y-m-d', strtotime('+1 month -1 day'));
         }
 
-        $stmt = $pdo->prepare('UPDATE chamas SET name = ?, phone = ?, billing_phone = ?, email = ?, plan = ?, monthly_fee = ?, monthly_dues = ?, sms_enabled = ?, sms_receipts = ?, sms_reminder_day = ?, plan_expires_at = ?, started_at = ?, notes = ? WHERE id = ?');
-        $stmt->execute([$name, $phone, $billing_phone, $email, $plan, max(0, $monthly_fee), max(0, $monthly_dues), $sms_enabled, $sms_receipts, $sms_reminder_day, $expiry, $started_at !== '' ? $started_at : null, $notes, $id]);
+        $stmt = $pdo->prepare('UPDATE chamas SET name = ?, phone = ?, billing_phone = ?, email = ?, plan = ?, monthly_fee = ?, monthly_dues = ?, sms_enabled = ?, sms_receipts = ?, sms_reminder_day = ?, loan_cap_multiplier = ?, loan_cap_max = ?, loan_approval_threshold = ?, plan_expires_at = ?, started_at = ?, notes = ? WHERE id = ?');
+        $stmt->execute([$name, $phone, $billing_phone, $email, $plan, max(0, $monthly_fee), max(0, $monthly_dues), $sms_enabled, $sms_receipts, $sms_reminder_day, $loan_cap_multiplier, $loan_cap_max, $loan_approval_threshold, $expiry, $started_at !== '' ? $started_at : null, $notes, $id]);
         audit_log('chama.update', 'chama', $id, sprintf('Updated chama settings (%s, plan %s, fee KSh %s, dues KSh %s)', $name, $plan, number_format(max(0, $monthly_fee), 2), number_format(max(0, $monthly_dues), 2)), ['before' => ['plan' => $chama['plan'], 'monthly_fee' => $chama['monthly_fee'], 'monthly_dues' => $chama['monthly_dues'] ?? 0]]);
         flash_success('Chama updated successfully.');
         header('Location: ' . url('chamas/index.php'));
@@ -135,7 +139,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <option value="1" <?= (int)($chama['sms_enabled'] ?? 0) === 1 ? 'selected' : '' ?>>On</option>
                 </select></div>
             <div class="col-md-3"><label class="form-label">Reminder day of month</label><input type="number" min="1" max="28" class="form-control" name="sms_reminder_day" value="<?= e($chama['sms_reminder_day'] ?? 5) ?>">
-                <div class="form-text">1-28. One SMS per member per month.</div></div>
+                <div class="form-text">1-28. One SMS per member per month.</div>
+            <div class="col-md-3"><label class="form-label">Loan cap (x savings)</label><input type="number" step="0.25" min="0" class="form-control" name="loan_cap_multiplier" value="<?= e($chama['loan_cap_multiplier'] ?? 3) ?>"><div class="form-text">Max loan = member savings times this. Set 0 to switch caps off.</div></div>
+            <div class="col-md-3"><label class="form-label">Hard ceiling (KSh)</label><input type="number" step="0.01" min="0" class="form-control" name="loan_cap_max" value="<?= e($chama['loan_cap_max'] ?? '') ?>" placeholder="No ceiling"><div class="form-text">Optional absolute maximum applied after the multiplier.</div></div>
+            <div class="col-md-3"><label class="form-label">Two-officer loans from</label><input type="number" step="0.01" min="0" class="form-control" name="loan_approval_threshold" value="<?= e($chama['loan_approval_threshold'] ?? 0) ?>"><div class="form-text">Loans at or above this need two different officers. 0 keeps single approval.</div>
+            </div></div>
             <div class="col-md-3"><label class="form-label">Payment receipt SMS</label>
                 <select class="form-select" name="sms_receipts">
                     <option value="1" <?= (int)($chama['sms_receipts'] ?? 1) === 1 ? 'selected' : '' ?>>Send on every payment</option>

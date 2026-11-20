@@ -49,7 +49,7 @@ $pendingLoanCount = count($pendingLoans);
 <div class="card shadow-sm mb-4">
     <div class="card-header">New Registrations Waiting Approval</div>
     <div class="card-body table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle table-cards">
             <thead>
                 <tr>
                     <th>Member No</th>
@@ -58,19 +58,19 @@ $pendingLoanCount = count($pendingLoans);
                     <th>Phone</th>
                     <th>Address</th>
                     <th>Registered</th>
-                    <th width="220">Action</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($pendingUsers as $u): ?>
                 <tr>
-                    <td><?= e($u['member_no']) ?></td>
-                    <td><?= e($u['full_name'] ?: $u['name']) ?></td>
-                    <td><?= e($u['email']) ?></td>
-                    <td><?= e($u['phone']) ?></td>
-                    <td><?= e($u['address']) ?></td>
-                    <td><?= e($u['created_at']) ?></td>
-                    <td>
+                    <td data-label="Member No"><?= e($u['member_no']) ?></td>
+                    <td data-label="Name"><?= e($u['full_name'] ?: $u['name']) ?></td>
+                    <td data-label="Email"><?= e($u['email']) ?></td>
+                    <td data-label="Phone"><a href="tel:<?= e(preg_replace('/[^0-9+]/', '', $u['phone'])) ?>"><?= e($u['phone']) ?></a></td>
+                    <td data-label="Address"><?= e($u['address']) ?></td>
+                    <td data-label="Registered"><?= e(date('d M Y', strtotime($u['created_at']))) ?></td>
+                    <td data-label="Action" class="actions-cell">
                         <form method="post" action="<?= url('users/approve_registration.php') ?>" class="d-inline" onsubmit="return confirm('Approve this registration?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$u['user_id'] ?>"><input type="hidden" name="action" value="approve"><button class="btn btn-sm btn-success">Approve</button></form>
                         <form method="post" action="<?= url('users/approve_registration.php') ?>" class="d-inline" onsubmit="return confirm('Reject this registration?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$u['user_id'] ?>"><input type="hidden" name="action" value="reject"><button class="btn btn-sm btn-danger">Reject</button></form>
                     </td>
@@ -87,7 +87,7 @@ $pendingLoanCount = count($pendingLoans);
 <div class="card shadow-sm">
     <div class="card-header">Loan Applications Waiting Approval</div>
     <div class="card-body table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle table-cards">
             <thead>
                 <tr>
                     <th>Member</th>
@@ -95,18 +95,18 @@ $pendingLoanCount = count($pendingLoans);
                     <th>Purpose</th>
                     <th>Applied</th>
                     <th>Status</th>
-                    <th width="220">Action</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($pendingLoans as $loan): ?>
                 <tr id="loan-<?= e($loan['loan_id']) ?>" class="<?= $selectedLoanId === $loan['loan_id'] ? 'table-warning' : '' ?>">
-                    <td><?= e($loan['member_no'].' - '.$loan['full_name']) ?></td>
-                    <td><?= money($loan['amount']) ?></td>
-                    <td><?= e($loan['purpose']) ?></td>
-                    <td><?= e($loan['application_date']) ?></td>
-                    <td><span class="badge bg-secondary">Pending</span></td>
-                    <td>
+                    <td data-label="Member"><?= e($loan['member_no'].' - '.$loan['full_name']) ?></td>
+                    <td data-label="Amount"><?= money($loan['amount']) ?></td>
+                    <td data-label="Purpose"><?= e($loan['purpose']) ?></td>
+                    <td data-label="Applied"><?= e($loan['application_date']) ?></td>
+                    <td data-label="Status"><span class="badge bg-secondary">Pending</span></td>
+                    <td data-label="Action" class="actions-cell">
                         <form method="post" action="<?= url('users/approve_loan.php') ?>" class="d-inline"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$loan['loan_id'] ?>"><input type="hidden" name="action" value="approve"><button class="btn btn-sm btn-outline-success">Approve</button></form>
                         <form method="post" action="<?= url('users/approve_loan.php') ?>" class="d-inline"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$loan['loan_id'] ?>"><input type="hidden" name="action" value="reject"><button class="btn btn-sm btn-outline-danger">Reject</button></form>
                     </td>

@@ -42,9 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ((int)$stmt->fetchColumn() === 0) {
             flash_error('That member does not belong to this group.');
         } else {
-            $stmt = $pdo->prepare('INSERT INTO loans (chama_id, member_id, amount, interest_rate, total_payable, balance, purpose, application_date) VALUES (?,?,?,?,?,?,?,?)');
+            // Enforce the group's configured loan caps server-side. Officers may record an override.
+        $chamaRow = $pdo->query('SELECT * FROM chamas WHERE id = ' . (int)$chamaId)->fetch() ?: [];
+        $limitError = loan_limit_violation($chamaRow, (int)$member_id, $amount);
+        $override = ((int)($_POST['override_limit'] ?? 0)) === 1 && in_array(current_user()['role'] ?? '', ['admin','treasurer'], true);
+        if ($limitError !== null && !$override) {
+            flash_error($limitError);
+            header('Location: ' . url('loans/index.php')); exit;
+        }
+        $stmt = $pdo->prepare('INSERT INTO loans (chama_id, member_id, amount, interest_rate, total_payable, balance, purpose, application_date) VALUES (?,?,?,?,?,?,?,?)');
             $stmt->execute([$chamaId, $member_id, $amount, $interest, $total, $total, $purpose, $date]);
-            audit_log('loan.create', 'loan', (int)$pdo->lastInsertId(), sprintf('Loan application of KSh %s at %s%% interest', number_format($amount, 2), $interest), ['purpose' => $purpose]);
+            audit_log('loan.create', 'loan', (int)$pdo->lastInsertId(), sprintf('Loan application of KSh %s at %s%% interest', number_format($amount, 2), $interest), ['purpose' => $purpose] + ($override ? ['override_limit' => true, 'allowed' => loan_limit_for_member($chamaRow, (int)$member_id)['allowed']] : []));
             flash_success('Loan application created successfully.');
             header('Location: ' . url('loans/index.php')); exit;
         }

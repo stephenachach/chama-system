@@ -45,14 +45,13 @@ try {
 <div class="container py-5">
     <div class="row align-items-center gx-5">
         <div class="col-12 col-md-6 order-md-1">
-            <p class="hero-kicker">Chama &amp; Welfare Group Software - Kenya</p>
+            <p class="hero-kicker">Karibu. Chama software, made for Kenya.</p>
             <h1 class="hero-title">
-                <span class="hero-soft">Run your chama like a</span>
-                <span class="hero-main">business, not a WhatsApp thread</span>
+                <span class="hero-soft">Run your chama</span>
+                <span class="hero-main">without the WhatsApp chaos</span>
             </h1>
-            <p class="hero-subtitle">Contributions, loans, welfare and statements in one place.
-                Member money goes straight to <strong>your group's own M-Pesa Paybill/Till</strong> - we never hold it
-                and never take a percentage.</p>
+            <p class="hero-subtitle">Contributions, loans, welfare and statements, all in one place.
+                Money lands straight in your group's own M-Pesa. We never hold it, never take a cut.</p>
             <div class="d-flex flex-column flex-sm-row gap-2 mb-3">
                 <a href="<?= url('start.php') ?>" class="btn btn-light btn-lg fw-semibold shadow-sm"><i class="fa-solid fa-rocket me-1"></i>Start a group</a>
                 <a href="<?= url('register.php') ?>" class="btn btn-outline-light btn-lg"><i class="fa-solid fa-user-plus me-1"></i>Join an existing group</a>
@@ -96,8 +95,8 @@ try {
 
     <!-- ===================== TWO PATHS ===================== -->
     <div class="text-center mb-4">
-        <h2 class="fw-bold text-white">Which one are you?</h2>
-        <p class="text-white-50 mb-0">Two different doors - pick the right one and you're set in minutes.</p>
+        <h2 class="fw-bold text-white">Two doors. Pick yours.</h2>
+        <p class="text-white-50 mb-0">Starting a group, or joining one? Each takes about two minutes.</p>
     </div>
     <div class="row g-3 mb-5">
         <div class="col-md-6">
@@ -107,9 +106,9 @@ try {
                     <h3 class="h4 fw-bold">I want to START a group</h3>
                     <p class="text-muted small">You are a chairperson, treasurer or organiser. You'll create the group, set monthly dues, add members and run contributions, loans and welfare.</p>
                     <ul class="small mb-3">
-                        <li><?= PILOT_DAYS ?> days free, then from <strong>KSh <?= number_format(min(array_map(fn($t) => (float)$t['monthly'], $tiers)) ?: 150, 0) ?>/month</strong> for the whole group</li>
-                        <li>Members pay dues into <strong>your own</strong> Paybill/Till</li>
-                        <li>No percentage of your savings or loans - ever</li>
+                        <li><?= PILOT_DAYS ?> days free, then from KSh <?= number_format(min(array_map(fn($t) => (float)$t['monthly'], $tiers)) ?: 150, 0) ?>/month for the whole group</li>
+                        <li>Dues land in your own Paybill or Till</li>
+                        <li>We take no percentage of your money. Ever.</li>
                     </ul>
                     <a href="<?= url('start.php') ?>" class="btn btn-primary btn-lg">Start a group - free pilot</a>
                 </div>
@@ -120,11 +119,11 @@ try {
                 <div class="card-body p-4">
                     <div class="fs-2 text-success mb-2"><i class="fa-solid fa-user-plus"></i></div>
                     <h3 class="h4 fw-bold">I want to JOIN my group</h3>
-                    <p class="text-muted small">Your chama, welfare society or table-banking group already uses this system. You'll track your own dues, loans, welfare and statements.</p>
+                    <p class="text-muted small">If your group already uses this system, join it here and follow your own dues, loans, welfare and statements.</p>
                     <ul class="small mb-3">
-                        <li>Use the <strong>registration link your group shared</strong> (WhatsApp/SMS), or pick your group from the list</li>
-                        <li>Your committee approves your account before you can log in</li>
-                        <li>Free for members - your group pays the subscription, never you</li>
+                        <li>Open the link your group shared, or pick your group from the list</li>
+                        <li>The committee approves you, then you log in</li>
+                        <li>Always free for members. The group pays, never you.</li>
                     </ul>
                     <a href="<?= url('register.php') ?>" class="btn btn-success btn-lg">Join an existing group</a>
                 </div>
@@ -134,18 +133,18 @@ try {
 
     <!-- ===================== FEATURES ===================== -->
     <div class="text-center mb-4">
-        <h2 class="fw-bold text-white">Everything a chama needs to run like a business</h2>
+        <h2 class="fw-bold text-white">What your group gets</h2>
         <p class="text-white-50 mb-0">Built with Kenyan savings groups, for Kenyan savings groups.</p>
     </div>
     <div class="row g-3 mb-5">
         <?php
         $features = [
-            ['fa-sack-dollar', 'Dues that collect themselves', 'Members tap "Pay my dues", get the Safaricom PIN prompt, and the contribution records itself with the receipt number - into the group\'s own verified Paybill/Till.'],
-            ['fa-vault', 'Your money stays yours', 'Group savings never pass through our account and we take no percentage of contributions, loans or welfare. The only money you pay us is the subscription.'],
-            ['fa-hand-holding-dollar', 'Loans that manage themselves', 'Balances fall with every repayment, overpayments are impossible, and a settled loan closes itself. Large welfare payouts can require two officers\' approval.'],
-            ['fa-comment-sms', 'Honest SMS reminders', 'Automatic reminders to whoever has not paid, from prepaid SMS credit you control - you always know the cost per message and what is left.'],
-            ['fa-file-lines', 'Statements anyone can trust', 'One click gives any member a clear one-page statement - contributions, repayments, loan position and totals. Print it or save as PDF for the AGM.'],
-            ['fa-shield-halved', 'An audit trail behind everything', 'Every shilling move is logged with who did it and when. Treasurers sleep; disputes end quickly.'],
+            ['fa-sack-dollar', 'Dues that collect themselves', 'A member taps Pay my dues, enters their PIN, done. The contribution records itself with the receipt number.'],
+            ['fa-vault', 'Your money stays yours', 'Group savings never pass through our account. No percentages, no cuts. Just one subscription.'],
+            ['fa-hand-holding-dollar', 'Loans that manage themselves', 'Balances drop with every repayment. Overpaying is impossible, and a cleared loan closes itself.'],
+            ['fa-comment-sms', 'Reminders that chase for you', 'Unpaid members get nudged automatically by SMS or email. Prepaid credit, cost always shown, no surprises.'],
+            ['fa-file-lines', 'Statements anyone can trust', 'One click, one clean page: contributions, repayments, loan position, totals. Print it or save as PDF for the AGM.'],
+            ['fa-shield-halved', 'An audit trail behind everything', 'Every shilling move is logged: who, when, how much. Disputes end quickly.'],
         ];
         foreach ($features as $i => [$icon, $title, $body]): ?>
         <div class="col-md-6 col-lg-4">
@@ -223,22 +222,22 @@ try {
 
     <!-- ===================== FAQ ===================== -->
     <div class="text-center mb-4" id="faq">
-        <h2 class="fw-bold text-white">Questions groups ask us</h2>
-        <p class="text-white-50 mb-0">Straight answers - no small print games.</p>
+        <h2 class="fw-bold text-white">Quick questions, straight answers</h2>
+        <p class="text-white-50 mb-0">The things groups ask before starting.</p>
     </div>
     <div class="row justify-content-center mb-5">
         <div class="col-lg-8">
             <div class="accordion shadow" id="faqAccordion">
                 <?php
                 $faqs = [
-                    ['Where does our money go?', 'Member contributions and loan repayments are paid by M-Pesa STK directly into <strong>your group\'s own Paybill or Till number</strong>, which we verify before switching it on. The platform never pools or holds group funds, and we take no percentage of your savings, loans or welfare - the only payment to us is your subscription.'],
-                    ['What happens if our subscription expires?', 'Your group switches to <strong>read-only</strong>: everyone can still log in, view all records, download statements and export CSV files. Nothing is deleted or held hostage. Editing switches back on when you renew.'],
-                    ['Is SMS unlimited?', 'No - and we don\'t pretend otherwise. SMS runs on <strong>prepaid credit per group</strong> (1 SMS = 1 unit; long messages cost more). You can see the balance at any time, and reminders stop if credit runs out rather than silently failing. Provider charges per message are disclosed when you top up.'],
-                    ['How do our members join?', 'Share your group registration link (WhatsApp works great) or let them pick your group on the Join page. You approve each sign-up before they can log in - so strangers can\'t wander in.'],
-                    ['Who can see welfare cases?', 'Only your group\'s committee (admin/treasurer). Members see only their own request and its status. For extra protection you can set a payout threshold: any welfare payout at or above it needs a <strong>second approval by a different officer</strong> before it can be marked paid.'],
-                    ['Can we run more than one group?', 'Yes. Each group is completely separate - its own members, money records, reports and Paybill route. Contact us and we\'ll set up the second group under its own subscription.'],
-                    ['Can we change plans later?', 'Any time. Plans and member caps are managed per group; upgrades apply immediately and we work out the fair difference. Message us using the contact details below (or those shared during your onboarding).'],
-                    ['Is our data safe?', 'Passwords are hashed, every group\'s data is strictly separated, all destructive actions need confirmation, and logins are throttled against guessing. Details are on our <a href="' . url('privacy.php') . '" class="text-decoration-none">Privacy &amp; security</a> page. Data-protection obligations are handled with a qualified Kenyan privacy professional.'],
+                    ['Where does our money go?', 'Straight into your group\'s own Paybill or Till, which we verify first. We never pool or hold group money, and we take no percentage. Our only charge is the subscription.'],
+                    ['What happens if our subscription expires?', 'Your group goes read-only: everyone can still log in, view records and export everything. Nothing is ever deleted or held hostage. Renew, and editing returns.'],
+                    ['Is SMS unlimited?', 'No, and we say so openly. SMS uses prepaid credit you control: you always see the balance and what each message costs. Reminders pause when credit runs out instead of failing quietly.'],
+                    ['How do our members join?', 'Share your group\'s registration link, or let them pick the group on the Join page. You approve every sign-up, so strangers can\'t wander in.'],
+                    ['Who can see welfare cases?', 'Only your group\'s committee. Members see just their own request. Big payouts can require a second officer\'s approval before they\'re paid.'],
+                    ['Can we run more than one group?', 'Yes. Each group is fully separate: its own members, records and Paybill. Talk to us and we\'ll set it up.'],
+                    ['Can we change plans later?', 'Any time. Upgrades apply immediately and we sort out the fair difference. Just talk to us.'],
+                    ['Is our data safe?', 'Hashed passwords, strictly separated group data, confirmed destructive actions, throttled logins. Full details on our <a href="' . url('privacy.php') . '" class="text-decoration-none">Privacy &amp; security</a> page.'],
                 ];
                 foreach ($faqs as $i => [$q, $a]): ?>
                 <div class="accordion-item">
@@ -279,8 +278,8 @@ try {
     <!-- ===================== FINAL CTA ===================== -->
     <div class="card shadow-lg border-0 mb-4" style="background:linear-gradient(120deg, rgba(45,64,226,.95), rgba(101,99,221,.95));">
         <div class="card-body p-4 p-md-5 text-center text-white">
-            <h3 class="fw-bold mb-2">Ready to stop chasing contributions in WhatsApp threads?</h3>
-            <p class="mb-4 opacity-75">Your first <?= PILOT_DAYS ?> days are free. After that, staying costs less than one missed contribution per month.</p>
+            <h3 class="fw-bold mb-2">Try it with your chama</h3>
+            <p class="mb-4 opacity-75">The first <?= PILOT_DAYS ?> days are free. No card, no contract, cancel anytime.</p>
             <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
                 <a href="<?= url('start.php') ?>" class="btn btn-light btn-lg fw-semibold">Start my group</a>
                 <a href="<?= url('register.php') ?>" class="btn btn-outline-light btn-lg">Join my group</a>

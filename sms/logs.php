@@ -96,7 +96,8 @@ $badge = ['sent' => 'success', 'simulated' => 'info', 'failed' => 'danger', 'que
                     <th>When</th>
                     <?php if ($isSuper): ?><th>Chama</th><?php endif; ?>
                     <th>Member</th>
-                    <th>Phone</th>
+                    <th>Recipient</th>
+                    <th>Channel</th>
                     <th>Purpose</th>
                     <th class="w-50">Message</th>
                     <th>Status</th>
@@ -104,7 +105,7 @@ $badge = ['sent' => 'success', 'simulated' => 'info', 'failed' => 'danger', 'que
             </thead>
             <tbody>
             <?php if (!$rows): ?>
-                <tr><td colspan="<?= $isSuper ? 7 : 6 ?>" class="text-muted py-3">No messages yet. Compose one, or wait for the first payment receipt.</td></tr>
+                <tr><td colspan="<?= $isSuper ? 8 : 7 ?>" class="text-muted py-3">No messages yet. Compose one, or wait for the first payment receipt.</td></tr>
             <?php endif; ?>
             <?php foreach ($rows as $r): ?>
                 <tr>
@@ -112,6 +113,7 @@ $badge = ['sent' => 'success', 'simulated' => 'info', 'failed' => 'danger', 'que
                     <?php if ($isSuper): ?><td><?= e($r['chama_name'] ?? '-') ?></td><?php endif; ?>
                     <td><?= e($r['full_name'] ?? '-') ?></td>
                     <td class="text-nowrap"><?= e($r['phone']) ?></td>
+                    <td><span class="badge bg-<?= ['sms'=>'primary','email'=>'info','whatsapp'=>'success'][strtolower((string)($r['channel'] ?? 'sms'))] ?? 'secondary' ?>"><?= e(strtoupper((string)($r['channel'] ?? 'sms'))) ?></span></td>
                     <td><span class="badge bg-secondary"><?= e(ucfirst((string)$r['purpose'])) ?></span></td>
                     <td>
                         <?= e($r['message']) ?>

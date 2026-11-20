@@ -118,6 +118,7 @@ if (is_superadmin()) {
     <?php require_once __DIR__ . '/includes/footer.php'; exit;
 }
 
+require_once __DIR__ . '/includes/notifications.php';
 require_once __DIR__ . '/includes/header.php';
 $isManager = in_array($user['role'], ['admin', 'treasurer'], true);
 $memberId = (int)($user['member_id'] ?? 0);
@@ -331,7 +332,10 @@ if ($isManager) {
                             <div class="fw-semibold"><?= e($fm['full_name']) ?></div>
                             <div class="small text-muted"><?= e($fm['phone']) ?></div>
                         </div>
-                        <a class="btn btn-sm btn-outline-secondary text-nowrap" href="tel:<?= e(preg_replace('/[^0-9+]/', '', $fm['phone'])) ?>"><i class="fa-solid fa-phone me-1"></i>Call</a>
+                        <div class="d-flex gap-1 flex-wrap justify-content-end">
+                            <a class="btn btn-sm btn-outline-secondary text-nowrap" href="tel:<?= e(preg_replace('/[^0-9+]/', '', $fm['phone'])) ?>"><i class="fa-solid fa-phone me-1"></i>Call</a>
+                            <a class="btn btn-sm btn-success text-nowrap" target="_blank" rel="noopener" href="<?= e(whatsapp_click_link((string)$fm['phone'], sprintf('Habari %s, gentle reminder about your %s dues (KSh %s) for %s. You can pay by M-Pesa in the app. Asante!', strtok($fm['full_name'], ' ') ?: $fm['full_name'], date('F'), number_format($monthlyDues, 0), $chama['name'] ?? 'the group'))) ?>"><i class="fa-brands fa-whatsapp me-1"></i>WhatsApp</a>
+                        </div>
                     </li>
                     <?php endforeach; ?>
                     <?php if (count($followUps) > 6): ?><li class="list-group-item small text-muted">+ <?= count($followUps) - 6 ?> more &mdash; see Members</li><?php endif; ?>

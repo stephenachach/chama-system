@@ -18,21 +18,21 @@ $users = $stmt->fetchAll();
 </div>
 <div class="card shadow-sm">
     <div class="card-body table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
+        <table class="table table-hover align-middle" table-cards">
+                <thead>
                 <tr><th>Name</th><th>Email</th><th>Role</th><th>Account Status</th><th>Member No</th><th>Created</th><th>Actions</th></tr>
             </thead>
             <tbody>
             <?php foreach($users as $u): ?>
                 <?php $status = $u['account_status'] ?? 'approved'; ?>
                 <tr>
-                    <td><?= e($u['name']) ?></td>
-                    <td><?= e($u['email']) ?></td>
-                    <td><span class="badge bg-primary"><?= e(ucfirst($u['role'])) ?></span></td>
-                    <td><span class="badge bg-<?= ['pending'=>'secondary','approved'=>'success','rejected'=>'danger'][$status] ?? 'secondary' ?>"><?= e(ucfirst($status)) ?></span></td>
-                    <td><?= e($u['member_no']) ?></td>
-                    <td><?= e($u['created_at']) ?></td>
-                    <td>
+                    <td data-label="Name"><?= e($u['name']) ?></td>
+                    <td data-label="Email"><?= e($u['email']) ?></td>
+                    <td data-label="Role"><span class="badge bg-primary"><?= e(ucfirst($u['role'])) ?></span></td>
+                    <td data-label="Status"><span class="badge bg-<?= ['pending'=>'secondary','approved'=>'success','rejected'=>'danger'][$status] ?? 'secondary' ?>"><?= e(ucfirst($status)) ?></span></td>
+                    <td data-label="Member No"><?= e($u['member_no']) ?></td>
+                    <td data-label="Created"><?= e(date('d M Y', strtotime($u['created_at']))) ?></td>
+                    <td data-label="Actions" class="actions-cell">
                         <?php if ($u['role'] === 'member' && $status === 'approved'): ?>
                             <form method="post" action="<?= url('users/promote.php') ?>" class="d-inline" onsubmit="return confirm('Promote this member to treasurer?')"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$u['id'] ?>"><button class="btn btn-sm btn-warning">Promote</button></form>
                         <?php else: ?>

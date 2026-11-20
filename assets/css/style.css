@@ -711,3 +711,26 @@ body.app-page :is(a, button, input, select, textarea):focus-visible {
     outline: 3px solid rgba(37, 99, 216, 0.55);
     outline-offset: 1px;
 }
+
+/* Public-site mobile polish (landing, pricing, pilot, privacy) */
+@media (max-width: 640px) {
+    body.hero-blue section.py-5 { padding-top: 2.2rem !important; padding-bottom: 2.2rem !important; }
+    .hero-kicker { font-size: 0.9rem; letter-spacing: 0.08em; }
+    .hero-subtitle { font-size: 1.02rem; margin-bottom: 1.4rem; }
+    .path-card, .feature-card { width: 100%; }
+    .d-grid.gap-4, .row.g-4 { row-gap: 1.1rem !important; }
+    footer .row > div { text-align: center; margin-bottom: 0.4rem; }
+    footer small { display: block; line-height: 1.5; }
+    .accordion-button { font-size: 0.98rem; padding: 0.85rem 1rem; white-space: normal; }
+    .navbar .btn { min-height: 44px; }
+}
+@media (max-width: 380px) {
+    h1, .hero-title { font-size: 1.9rem !important; }
+    .display-6 { font-size: 1.5rem !important; }
+}
+
+/* Non-app light pages (privacy, login, register) phone spacing */
+@media (max-width: 640px) {
+    body.bg-light:not(.app-page) .container.py-5 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+    body.bg-light:not(.app-page) footer .row > div { text-align: center; }
+}

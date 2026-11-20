@@ -2,11 +2,21 @@
 require_once __DIR__ . '/app.php';
 
 // Credentials live in config/db-credentials.php (XAMPP defaults shipped).
-$__dbCreds = require __DIR__ . '/db-credentials.php';
-$host = (string)$__dbCreds['host'];
-$dbname = (string)$__dbCreds['dbname'];
-$username = (string)$__dbCreds['username'];
-$password = (string)$__dbCreds['password'];
+// Railway / production env vars take priority (MySQL plugin uses MYSQL* names)
+// Local XAMPP still works via config/db-credentials.php fallback.
+$__dbCreds = (file_exists(__DIR__ . '/db-credentials.php') ? require __DIR__ . '/db-credentials.php' : []);
+$__env = function(string ...$keys) {
+    foreach ($keys as $k) {
+        $v = getenv($k);
+        if ($v === false || $v === '') $v = $_ENV[$k] ?? $_SERVER[$k] ?? null;
+        if ($v !== null && $v !== '') return (string)$v;
+    }
+    return null;
+};
+$host     = $__env('DB_HOST', 'MYSQLHOST', 'MYSQL_HOST')     ?? (string)($__dbCreds['host'] ?? 'localhost');
+$dbname   = $__env('DB_NAME', 'MYSQLDATABASE', 'MYSQL_DATABASE', 'DB_DATABASE') ?? (string)($__dbCreds['dbname'] ?? 'chama_system_db');
+$username = $__env('DB_USER', 'MYSQLUSER', 'MYSQL_USER', 'DB_USERNAME')   ?? (string)($__dbCreds['username'] ?? 'root');
+$password = $__env('DB_PASSWORD', 'MYSQLPASSWORD', 'MYSQL_PASSWORD', 'DB_PASS') ?? (string)($__dbCreds['password'] ?? '');
 
 try {
     $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $username, $password, [
@@ -363,6 +373,25 @@ function migrate_funds_schema(PDO $pdo): void
         $pdo->exec("ALTER TABLE welfare_payouts ADD COLUMN second_at DATETIME NULL AFTER second_role");
     }
 
+    if (!column_exists($pdo, 'sms_logs', 'channel')) {
+        $pdo->exec("ALTER TABLE sms_logs ADD COLUMN channel VARCHAR(20) NOT NULL DEFAULT 'sms' AFTER purpose");
+    }
+    if (!column_exists($pdo, 'chamas', 'loan_cap_multiplier')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN loan_cap_multiplier DECIMAL(6,2) NOT NULL DEFAULT 3.00 AFTER welfare_threshold");
+    }
+    if (!column_exists($pdo, 'chamas', 'loan_cap_max')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN loan_cap_max DECIMAL(12,2) NULL AFTER loan_cap_multiplier");
+    }
+    if (!column_exists($pdo, 'chamas', 'loan_approval_threshold')) {
+        $pdo->exec("ALTER TABLE chamas ADD COLUMN loan_approval_threshold DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER loan_cap_max");
+    }
+    if (!column_exists($pdo, 'loans', 'approved_by')) {
+        $pdo->exec("ALTER TABLE loans ADD COLUMN approved_by INT NULL");
+        $pdo->exec("ALTER TABLE loans ADD COLUMN needs_second TINYINT(1) NOT NULL DEFAULT 0");
+        $pdo->exec("ALTER TABLE loans ADD COLUMN second_ok TINYINT(1) NOT NULL DEFAULT 0");
+        $pdo->exec("ALTER TABLE loans ADD COLUMN second_by INT NULL");
+        $pdo->exec("ALTER TABLE loans ADD COLUMN second_at DATETIME NULL");
+    }
     // Platform settings (support contacts shown on the public site).
     $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
         setting_key VARCHAR(60) NOT NULL,

@@ -1,0 +1,13 @@
+# Chama System – production hardening (Apache/XAMPP friendly)
+
+# Never serve the schema dump, lockfiles or dot-directories
+<FilesMatch "^database\.sql$|^composer\.(json|lock)$">
+    Require all denied
+</FilesMatch>
+
+# Block anyone guessing common backup/editor litter
+<FilesMatch "\.(bak|old|orig|save|swp|tmp|log|ini)$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes

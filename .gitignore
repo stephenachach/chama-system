@@ -11,5 +11,3 @@ storage/*
 .DS_Store
 Thumbs.db
 *.log
-chama-system-v*/
-chama-system-phase*/

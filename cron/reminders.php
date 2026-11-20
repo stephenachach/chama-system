@@ -18,6 +18,7 @@ define('CSRF_EXEMPT', true);   // public form / machine endpoint: CSRF handled p
 
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../includes/sms.php';
+require_once __DIR__ . '/../includes/notifications.php';
 
 $isCli = PHP_SAPI === 'cli';
 
@@ -60,7 +61,7 @@ foreach ($chamas as $chama) {
         continue;
     }
 
-    $stmt = $pdo->prepare("SELECT id, full_name, phone FROM members WHERE chama_id = ? AND status = 'active' ORDER BY full_name");
+    $stmt = $pdo->prepare("SELECT id, full_name, phone, email FROM members WHERE chama_id = ? AND status = 'active' ORDER BY full_name");
     $stmt->execute([$chamaId]);
     $members = $stmt->fetchAll();
 
@@ -87,14 +88,21 @@ foreach ($chamas as $chama) {
             number_format($dues, 2),
             $chama['name']
         );
-        $res = sms_send([
-            'chama_id'  => $chamaId,
-            'member_id' => (int)$m['id'],
-            'phone'     => (string)$m['phone'],
-            'purpose'   => 'reminder',
-            'message'   => $msg,
-        ]);
-        $res['ok'] ? $sent++ : $failed++;
+        $res = notify_member(
+            [
+                'id'        => (int)$m['id'],
+                'chama_id'  => $chamaId,
+                'full_name' => (string)$m['full_name'],
+                'phone'     => (string)$m['phone'],
+                'email'     => (string)($m['email'] ?? ''),
+            ],
+            [
+                'purpose' => 'reminder',
+                'subject' => sprintf('%s dues reminder - %s', $monthLabel, $chama['name']),
+                'message' => $msg,
+            ]
+        );
+        !empty($res['ok']) ? $sent++ : $failed++;
     }
     $totalSent += $sent;
     $totalFailed += $failed;
